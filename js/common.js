@@ -251,3 +251,4 @@ stop2.addEventListener("click",function(){
 })
 
 
+//정처산기 반 배정위한 FIX ITEM 선정(지울예정)
