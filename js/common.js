@@ -50,7 +50,6 @@ const createTd = ()=>{
                         const texetField = parentNode.querySelector('input[type="text"]');
                         texetField.disabled=true;
             
-                        
             
                     }else{
                       
