@@ -248,3 +248,47 @@ td span.td-move-icon{
     color:#666;
     transition:color 0.2s ease;
 }
+.tbl{
+    margin:0 auto;
+    width:100%;
+    border : 1px solid;
+    
+    text-align:center;
+  
+    position:relative;
+    margin-top:100px;    
+}
+.show-block{
+    min-height:50vh;
+    background-color: #f8f9fa;
+    position: relative;
+}
+
+.tbl td{
+    border : 1px solid;
+    padding : 10px;
+    text-align:center;
+    max-height:80px;
+}
+.tbl tr{
+    max-height:80px;
+}
+
+.reset-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1001;
+}
+
+.reset-button button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    padding: 5px 10px;
+}
+
+.reset-button .material-symbols-outlined {
+    font-size: 16px;
+}

@@ -5,6 +5,7 @@ let 조원;
 let 고정이름 = [];    
 let 고정번호 = [];
 let draggedElement = null; // 드래그 중인 요소
+let positions = {}; // 위치 정보 저장
 
 // JSON 데이터 로드 함수
 async function loadDataFromJSON() {
@@ -16,6 +17,18 @@ async function loadDataFromJSON() {
         // 조원 데이터 로드
         const jooneResponse = await fetch('dataset/joone.json');
         const jooneData = await jooneResponse.json();
+        
+        // localStorage에서 위치 데이터 로드
+        const savedPositions = localStorage.getItem('seatPositions');
+        if (savedPositions) {
+            positions = JSON.parse(savedPositions);
+        } else {
+            // 기본 위치 정보 설정
+            positions = {
+                teacher: { x: 10, y: -70 },
+                tds: {}
+            };
+        }
         
         // 입력란에 데이터 설정
         const managerTextarea = document.querySelector('.manager');
@@ -35,9 +48,81 @@ async function loadDataFromJSON() {
     }
 }
 
+// 위치 정보 저장 함수
+function savePositions() {
+    try {
+        localStorage.setItem('seatPositions', JSON.stringify(positions));
+        console.log('위치 정보 저장 완료');
+    } catch (error) {
+        console.error('위치 정보 저장 오류:', error);
+    }
+}
+
+// 강사 위치 적용 함수
+function applyTeacherPosition() {
+    const teacherLabel = document.querySelector('.teacher-label');
+    if (teacherLabel && positions.teacher) {
+        teacherLabel.style.left = positions.teacher.x + 'px';
+        teacherLabel.style.top = positions.teacher.y + 'px';
+    }
+}
+
+// TD 위치 적용 함수
+function applyTdPositions() {
+    const tds = document.querySelectorAll('.tbl td');
+    tds.forEach(td => {
+        const dataNo = td.getAttribute('data-no');
+        if (dataNo && positions.tds && positions.tds[dataNo]) {
+            td.style.position = 'absolute';
+            td.style.left = positions.tds[dataNo].x + 'px';
+            td.style.top = positions.tds[dataNo].y + 'px';
+            td.style.zIndex = '1000';
+        }
+    });
+}
+
+// 위치 초기화 함수
+function resetPositions() {
+    if (confirm('모든 위치 정보를 초기화하시겠습니까?')) {
+        // localStorage 삭제
+        localStorage.removeItem('seatPositions');
+        
+        // positions 객체 초기화
+        positions = {
+            teacher: { x: 10, y: -70 },
+            tds: {}
+        };
+        
+        // 강사 div 위치 초기화
+        const teacherLabel = document.querySelector('.teacher-label');
+        if (teacherLabel) {
+            teacherLabel.style.left = '10px';
+            teacherLabel.style.top = '-70px';
+        }
+        
+        // 모든 TD 위치 초기화
+        const tds = document.querySelectorAll('.tbl td');
+        tds.forEach(td => {
+            td.style.position = '';
+            td.style.left = '';
+            td.style.top = '';
+            td.style.zIndex = '';
+        });
+        
+        console.log('위치 정보 초기화 완료');
+        alert('위치 정보가 초기화되었습니다.');
+    }
+}
+
 // 페이지 로드 시 데이터 로드
 document.addEventListener('DOMContentLoaded', function() {
-    loadDataFromJSON();
+    loadDataFromJSON().then(() => {
+        // 데이터 로드 완료 후 위치 적용
+        setTimeout(() => {
+            applyTeacherPosition();
+            applyTdPositions();
+        }, 100);
+    });
     initTeacherMove();
     initTdMove();
 });
@@ -303,6 +388,11 @@ const createTd = ()=>{
     
     // 테이블 생성 후 드래그 앤 드롭 리스너 추가
     addDragAndDropListeners();
+    
+    // 위치 정보 적용
+    setTimeout(() => {
+        applyTdPositions();
+    }, 100);
 }
 createTd();
 
@@ -507,6 +597,9 @@ function initTeacherMove() {
         teacherLabel.style.left = finalLeft + 'px';
         teacherLabel.style.top = finalTop + 'px';
         teacherLabel.style.right = 'auto';
+        
+        // 위치 정보 업데이트
+        positions.teacher = { x: finalLeft, y: finalTop };
     });
     
     // 마우스 업 이벤트 (드래그 종료)
@@ -514,6 +607,9 @@ function initTeacherMove() {
         if (isDragging) {
             isDragging = false;
             teacherLabel.style.cursor = 'move';
+            
+            // 위치 정보 저장
+            savePositions();
         }
     });
     
@@ -605,6 +701,13 @@ function initTdMove() {
         currentTd.style.left = finalLeft + 'px';
         currentTd.style.top = finalTop + 'px';
         currentTd.style.zIndex = '1000';
+        
+        // 위치 정보 업데이트
+        const dataNo = currentTd.getAttribute('data-no');
+        if (dataNo) {
+            if (!positions.tds) positions.tds = {};
+            positions.tds[dataNo] = { x: finalLeft, y: finalTop };
+        }
     });
     
     // TD 마우스 업 이벤트
@@ -613,6 +716,9 @@ function initTdMove() {
             isTdDragging = false;
             currentTd.style.cursor = 'grab';
             currentTd.style.zIndex = 'auto';
+            
+            // 위치 정보 저장
+            savePositions();
         }
     });
     
