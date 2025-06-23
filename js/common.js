@@ -18,17 +18,8 @@ async function loadDataFromJSON() {
         const jooneResponse = await fetch('dataset/joone.json');
         const jooneData = await jooneResponse.json();
         
-        // localStorage에서 위치 데이터 로드
-        const savedPositions = localStorage.getItem('seatPositions');
-        if (savedPositions) {
-            positions = JSON.parse(savedPositions);
-        } else {
-            // 기본 위치 정보 설정
-            positions = {
-                teacher: { x: 10, y: -70 },
-                tds: {}
-            };
-        }
+        // 서버에서 위치 데이터 가져오기
+        await loadPositionsFromServer();
         
         // 입력란에 데이터 설정
         const managerTextarea = document.querySelector('.manager');
@@ -48,6 +39,70 @@ async function loadDataFromJSON() {
     }
 }
 
+// 서버에서 위치 정보 가져오기
+async function loadPositionsFromServer() {
+    try {
+        console.log('=== 서버에서 위치 정보 가져오기 시작 ===');
+        console.log('요청 URL: http://localhost:8095/seat?id=1');
+        
+        const response = await axios.get('http://localhost:8095/seat?id=1');
+        
+        console.log('서버 응답 상태:', response.status);
+        console.log('서버 응답 데이터:', response.data);
+        
+        if (response.status === 200 && response.data && response.data.positions) {
+            // 서버에서 받은 위치 정보를 localStorage에 저장
+            positions = response.data.positions;
+            localStorage.setItem('seatPositions', JSON.stringify(positions));
+            console.log('✅ 서버에서 위치 정보 가져오기 성공');
+            console.log('저장된 위치 정보:', positions);
+            console.log('localStorage에 저장 완료');
+        } else {
+            console.error('❌ 서버 응답이 유효하지 않음');
+            console.log('응답 데이터 구조:', response.data);
+            throw new Error('서버에서 유효한 위치 정보를 받지 못했습니다.');
+        }
+    } catch (error) {
+        console.warn('⚠️ 서버에서 위치 정보 가져오기 실패');
+        console.error('에러 상세:', error.message);
+        
+        // 기존 localStorage에서 위치 정보 가져오기
+        console.log('=== localStorage에서 위치 정보 가져오기 시도 ===');
+        const savedPositions = localStorage.getItem('seatPositions');
+        
+        if (savedPositions) {
+            try {
+                positions = JSON.parse(savedPositions);
+                console.log('✅ 기존 localStorage에서 위치 정보 로드 성공');
+                console.log('로드된 위치 정보:', positions);
+            } catch (parseError) {
+                console.error('❌ localStorage 위치 정보 파싱 실패');
+                console.error('파싱 에러:', parseError);
+                console.log('localStorage 원본 데이터:', savedPositions);
+                setDefaultPositions();
+            }
+        } else {
+            console.log('⚠️ localStorage에 저장된 위치 정보 없음');
+            setDefaultPositions();
+        }
+    }
+    
+    console.log('=== 최종 위치 정보 ===');
+    console.log('positions 객체:', positions);
+    console.log('=== 위치 정보 로드 완료 ===');
+}
+
+// 기본 위치 정보 설정
+function setDefaultPositions() {
+    console.log('=== 기본 위치 정보 설정 ===');
+    positions = {
+        teacher: { x: 10, y: -70 },
+        tds: {}
+    };
+    console.log('기본 위치 정보:', positions);
+    console.log('=== 기본 위치 정보 설정 완료 ===');
+}
+
 // 위치 정보 저장 함수
 function savePositions() {
     try {
@@ -60,25 +115,41 @@ function savePositions() {
 
 // 강사 위치 적용 함수
 function applyTeacherPosition() {
+    console.log('=== 강사 위치 적용 시작 ===');
     const teacherLabel = document.querySelector('.teacher-label');
     if (teacherLabel && positions.teacher) {
         teacherLabel.style.left = positions.teacher.x + 'px';
         teacherLabel.style.top = positions.teacher.y + 'px';
+        console.log('✅ 강사 위치 적용 완료:', positions.teacher);
+    } else {
+        console.warn('⚠️ 강사 요소를 찾을 수 없거나 위치 정보가 없음');
+        console.log('teacherLabel 존재:', !!teacherLabel);
+        console.log('positions.teacher:', positions.teacher);
     }
+    console.log('=== 강사 위치 적용 완료 ===');
 }
 
 // TD 위치 적용 함수
 function applyTdPositions() {
+    console.log('=== TD 위치 적용 시작 ===');
     const tds = document.querySelectorAll('.tbl td');
+    console.log('찾은 TD 개수:', tds.length);
+    
+    let appliedCount = 0;
     tds.forEach(td => {
         const dataNo = td.getAttribute('data-no');
-        if (dataNo && positions.tds && positions.tds[dataNo]) {
+        if (dataNo && positions.tds && positions.tds[dataNo] && !positions.tds[dataNo].deleted) {
             td.style.position = 'absolute';
             td.style.left = positions.tds[dataNo].x + 'px';
             td.style.top = positions.tds[dataNo].y + 'px';
             td.style.zIndex = '1000';
+            appliedCount++;
+            console.log(`TD ${dataNo} 위치 적용:`, positions.tds[dataNo]);
         }
     });
+    
+    console.log(`✅ TD 위치 적용 완료: ${appliedCount}개 적용됨`);
+    console.log('=== TD 위치 적용 완료 ===');
 }
 
 // 위치 초기화 함수
@@ -114,17 +185,80 @@ function resetPositions() {
     }
 }
 
+// 서버로 위치 정보 저장 함수
+async function savePositionsToServer() {
+    try {
+        // 현재 위치 정보 업데이트
+        updateCurrentPositions();
+        
+        const response = await axios.post('http://localhost:8095/seat/save-positions', {
+            positions: positions,
+            timestamp: new Date().toISOString()
+        });
+        
+        if (response.status === 200) {
+            console.log('서버 저장 완료:', response.data);
+            alert('위치 정보가 서버에 저장되었습니다.');
+        } else {
+            console.error('서버 저장 실패:', response.status);
+            alert('서버 저장에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('서버 저장 오류:', error);
+        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+    }
+}
+
+// 현재 위치 정보 업데이트 함수
+function updateCurrentPositions() {
+    // 강사 div 현재 위치 업데이트
+    const teacherLabel = document.querySelector('.teacher-label');
+    if (teacherLabel) {
+        const rect = teacherLabel.getBoundingClientRect();
+        const sectionRect = teacherLabel.closest('section').getBoundingClientRect();
+        positions.teacher = {
+            x: rect.left - sectionRect.left,
+            y: rect.top - sectionRect.top
+        };
+    }
+    
+    // TD들 현재 위치 업데이트
+    const tds = document.querySelectorAll('.tbl td');
+    if (!positions.tds) positions.tds = {};
+    
+    tds.forEach(td => {
+        const dataNo = td.getAttribute('data-no');
+        if (dataNo) {
+            const rect = td.getBoundingClientRect();
+            const sectionRect = td.closest('section').getBoundingClientRect();
+            positions.tds[dataNo] = {
+                x: rect.left - sectionRect.left,
+                y: rect.top - sectionRect.top
+            };
+        }
+    });
+}
+
 // 페이지 로드 시 데이터 로드
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== 페이지 로드 시작 ===');
+    console.log('DOM 로드 완료, 데이터 로드 시작...');
+    
     loadDataFromJSON().then(() => {
+        console.log('=== 데이터 로드 완료, 위치 적용 시작 ===');
         // 데이터 로드 완료 후 위치 적용
         setTimeout(() => {
+            console.log('위치 적용 지연 실행 시작...');
             applyTeacherPosition();
             applyTdPositions();
+            console.log('=== 페이지 로드 완료 ===');
         }, 100);
     });
+    
+    console.log('이동 기능 초기화 시작...');
     initTeacherMove();
     initTdMove();
+    console.log('이동 기능 초기화 완료');
 });
 
 // 드래그 앤 드롭 관련 함수들
@@ -282,12 +416,10 @@ function addCheckboxEventListener(checkbox) {
 
 // 테이블 생성 함수
 const createTd = ()=>{
-
-        
-
     const row = document.querySelector('.table-row').value;
     const col = document.querySelector('.table-col').value;
     const tbl = document.querySelector('.tbl');
+    
     //기존테이블삭제
     // 자식 노드가 있는지 판별
     if(tbl.hasChildNodes()){
@@ -297,10 +429,15 @@ const createTd = ()=>{
 
     let cnt = 1;
     for(i=0;i<row;i++){
-
         const tr = document.createElement('tr');
        
         for(j=0;j<col;j++){
+            // localStorage에 삭제된 TD 정보가 있는지 확인
+            if (positions.tds && positions.tds[cnt] && positions.tds[cnt].deleted) {
+                console.log(`TD ${cnt}는 삭제된 상태이므로 건너뜀`);
+                cnt++;
+                continue;
+            }
 
             const td = document.createElement("td");
             td.innerHTML=cnt;
@@ -370,17 +507,37 @@ const createTd = ()=>{
 
             td.appendChild(moveIcon);
 
+            // X 버튼 추가 (삭제 버튼)
+            const deleteButton = document.createElement('button');
+            deleteButton.innerHTML = "×";
+            deleteButton.setAttribute('class','td-delete-btn');
+            deleteButton.setAttribute('style','position:absolute;right:0px;top:0px;width:20px;height:20px;border-radius:0 5px 0 5px;background-color:#ff4444;color:white;border:none;font-size:14px;font-weight:bold;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.2);');
+            
+            deleteButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (confirm(`TD ${cnt}를 삭제하시겠습니까?`)) {
+                    // localStorage에서 해당 TD 위치 정보를 삭제 상태로 표시
+                    if (!positions.tds) positions.tds = {};
+                    positions.tds[cnt] = { deleted: true };
+                    localStorage.setItem('seatPositions', JSON.stringify(positions));
+                    console.log(`TD ${cnt}가 삭제 상태로 localStorage에 저장됨`);
+                    
+                    // TD 요소 제거
+                    td.remove();
+                    console.log(`TD ${cnt} 삭제됨`);
+                }
+            });
+
+            td.appendChild(deleteButton);
+
             const input = document.createElement('input');
             input.setAttribute('type','text');
             td.appendChild(input);
-
-
 
             td.classList.add('active');
             
             tr.appendChild(td);
 
-           
             cnt++;
         }
         tbl.appendChild(tr);
@@ -396,15 +553,6 @@ const createTd = ()=>{
 }
 createTd();
 
-
-
-
-
-
-
-
-
-
 //셔플함수
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -414,12 +562,6 @@ function shuffleArray(array) {
     }
     return array;
 }
-
-
-
-
-
-
 
 function randomSeat(array,sel){
 
@@ -444,8 +586,6 @@ function randomSeat(array,sel){
 
     
 }
-
-
 
 const start =  document.querySelector('.start');
 let interValObj;
@@ -740,4 +880,87 @@ function initTdMove() {
             currentTd = null;
         }
     });
+}
+
+// 조장 데이터 저장 함수
+async function saveManagerData() {
+    try {
+        const managerTextarea = document.querySelector('.manager');
+        const managerData = managerTextarea.value;
+        
+        console.log('조장 데이터 저장 시작:', managerData);
+        
+        const response = await axios.post('http://localhost:8095/seat/save-manager', {
+            manager: managerData,
+            timestamp: new Date().toISOString()
+        });
+        
+        if (response.status === 200) {
+            console.log('조장 데이터 저장 완료:', response.data);
+            alert('조장 데이터가 서버에 저장되었습니다.');
+        } else {
+            console.error('조장 데이터 저장 실패:', response.status);
+            alert('조장 데이터 저장에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('조장 데이터 저장 오류:', error);
+        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+    }
+}
+
+// 조원 데이터 저장 함수
+async function saveMemberData() {
+    try {
+        const memberTextarea = document.querySelector('.member');
+        const memberData = memberTextarea.value;
+        
+        console.log('조원 데이터 저장 시작:', memberData);
+        
+        const response = await axios.post('http://localhost:8095/seat/save-member', {
+            member: memberData,
+            timestamp: new Date().toISOString()
+        });
+        
+        if (response.status === 200) {
+            console.log('조원 데이터 저장 완료:', response.data);
+            alert('조원 데이터가 서버에 저장되었습니다.');
+        } else {
+            console.error('조원 데이터 저장 실패:', response.status);
+            alert('조원 데이터 저장에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('조원 데이터 저장 오류:', error);
+        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+    }
+}
+
+// 테이블 설정 저장 함수
+async function saveTableConfig() {
+    try {
+        const rowInput = document.querySelector('.table-row');
+        const colInput = document.querySelector('.table-col');
+        const rowValue = rowInput.value;
+        const colValue = colInput.value;
+        
+        console.log('테이블 설정 저장 시작:', { row: rowValue, col: colValue });
+        
+        const response = await axios.post('http://localhost:8095/seat/save-table-config', {
+            tableConfig: {
+                rows: parseInt(rowValue),
+                cols: parseInt(colValue)
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+        if (response.status === 200) {
+            console.log('테이블 설정 저장 완료:', response.data);
+            alert('테이블 설정이 서버에 저장되었습니다.');
+        } else {
+            console.error('테이블 설정 저장 실패:', response.status);
+            alert('테이블 설정 저장에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('테이블 설정 저장 오류:', error);
+        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+    }
 }

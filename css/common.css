@@ -86,6 +86,7 @@ table td.drag-over {
     cursor: move;
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
+    z-index: 1000;
 }
 
 .move-icon {
@@ -131,19 +132,23 @@ input[type='checkbox']{
 }
 
 .inputBlock{
-   
-    margin : 50px auto;
+    margin : 20px auto;
     margin-top:10px;
+    
     border : 1px solid;
     width : 1000px;
     padding : 20px;
-    text-align:center;
-
+    
     display:flex;
     justify-content: space-evenly;
     align-items: center;
 
     position:relative;
+}
+.inputBlock input,
+.inputBlock textarea
+{
+    font-size:.9rem;
 }
 .inputBlock::before{
     content : "HEADER";
@@ -172,6 +177,7 @@ input[type='checkbox']{
     justify-content: space-between;
     align-items:end;
     flex-direction: column;
+    height : 220px;
     
 }
 .inputBlock .left .title-01{
@@ -193,13 +199,58 @@ input[type='checkbox']{
     display:block;
     margin :5px;
 }
+
+.inputBlock .right .label-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.inputBlock .right .label-group label {
+    margin: 0;
+}
+
+.inputBlock .right .label-group button {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+}
+
+.inputBlock .right .label-group .material-symbols-outlined {
+    font-size: 14px;
+}
+
 .inputBlock .right{
     border : 1px solid;
     padding : 10px;
     width:550px;
-   
-   
+    height : 220px;
 }
+
+.inputBlock .right .input-group {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.inputBlock .right .input-wrapper {
+    flex: 1;
+}
+
+.inputBlock .right .input-group button {
+    height: fit-content;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    white-space: nowrap;
+}
+
+.inputBlock .right .input-group .material-symbols-outlined {
+    font-size: 16px;
+}
+
 .inputBlock .title-01{
     display:flex;
     justify-content: center;
@@ -268,7 +319,8 @@ td span.td-move-icon{
     border : 1px solid;
     padding : 10px;
     text-align:center;
-    max-height:80px;
+    margin : 15px;
+
 }
 .tbl tr{
     max-height:80px;
@@ -279,6 +331,8 @@ td span.td-move-icon{
     top: 10px;
     right: 10px;
     z-index: 1001;
+    display: flex;
+    gap: 10px;
 }
 
 .reset-button button {
@@ -291,4 +345,26 @@ td span.td-move-icon{
 
 .reset-button .material-symbols-outlined {
     font-size: 16px;
+}
+
+/* TD 삭제 버튼 스타일 */
+.td-delete-btn {
+    transition: all 0.2s ease;
+    position:absolute;
+    right:-20px !important;
+    top:10px;
+    z-index:1000;
+    background-color: #cc0000;
+    color:white;
+    border-radius: 5px;
+}
+
+.td-delete-btn:hover {
+    background-color: #cc0000 !important;
+    transform: scale(1.1);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3) !important;
+}
+
+.td-delete-btn:active {
+    transform: scale(0.95);
 }
