@@ -1,11 +1,420 @@
 console.log('common.js..');
 
+// 서버 설정 전역변수
+const SERVER_CONFIG = {
+    BASE_URL: 'http://localhost:8095',
+    ENDPOINTS: {
+        SEAT: '/seat',
+        SAVE_POSITIONS: '/seat/save-positions',
+        SAVE_MANAGER: '/seat/save-manager',
+        SAVE_MEMBER: '/seat/save-member',
+        SAVE_TABLE_CONFIG: '/seat/save-table-config'
+    }
+};
+
+// 서버 요청 공통 함수
+async function serverRequest(endpoint, method = 'GET', data = null) {
+    try {
+        const url = SERVER_CONFIG.BASE_URL + endpoint;
+        const config = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+        
+        if (data) {
+            config.body = JSON.stringify(data);
+        }
+        
+        console.log(`서버 요청: ${method} ${url}`, data);
+        
+        const response = await fetch(url, config);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('서버 응답:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('서버 요청 실패:', error);
+        throw error;
+    }
+}
+
+// 서버에서 위치 정보 가져오기
+async function loadPositionsFromServer() {
+    try {
+        console.log('=== 서버에서 위치 정보 가져오기 시작 ===');
+        
+        const result = await serverRequest(`${SERVER_CONFIG.ENDPOINTS.SEAT}?id=1`);
+        
+        if (result && result.positions) {
+            // 서버에서 받은 위치 정보를 localStorage에 저장
+            positions = result.positions;
+            localStorage.setItem('seatPositions', JSON.stringify(positions));
+            console.log('✅ 서버에서 위치 정보 가져오기 성공');
+            console.log('저장된 위치 정보:', positions);
+            console.log('localStorage에 저장 완료');
+        } else {
+            console.error('❌ 서버 응답이 유효하지 않음');
+            console.log('응답 데이터 구조:', result);
+            throw new Error('서버에서 유효한 위치 정보를 받지 못했습니다.');
+        }
+    } catch (error) {
+        console.warn('⚠️ 서버에서 위치 정보 가져오기 실패');
+        console.error('에러 상세:', error.message);
+        
+        // 기존 localStorage에서 위치 정보 가져오기
+        console.log('=== localStorage에서 위치 정보 가져오기 시도 ===');
+        const savedPositions = localStorage.getItem('seatPositions');
+        
+        if (savedPositions) {
+            try {
+                positions = JSON.parse(savedPositions);
+                console.log('✅ 기존 localStorage에서 위치 정보 로드 성공');
+                console.log('로드된 위치 정보:', positions);
+            } catch (parseError) {
+                console.error('❌ localStorage 위치 정보 파싱 실패');
+                console.error('파싱 에러:', parseError);
+                console.log('localStorage 원본 데이터:', savedPositions);
+                setDefaultPositions();
+            }
+        } else {
+            console.log('⚠️ localStorage에 저장된 위치 정보 없음');
+            setDefaultPositions();
+        }
+    }
+    
+    console.log('=== 최종 위치 정보 ===');
+    console.log('positions 객체:', positions);
+    console.log('=== 위치 정보 로드 완료 ===');
+}
+
+async function savePositionsToServer() {
+    try {
+        // 현재 위치 정보 업데이트
+        updateCurrentPositions();
+        
+        const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_POSITIONS, 'POST', {
+            positions: positions,
+            timestamp: new Date().toISOString()
+        });
+        
+        console.log('서버 저장 완료:', result);
+        alert('위치 정보가 서버에 저장되었습니다.');
+        
+    } catch (error) {
+        console.error('서버 저장 오류:', error);
+        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+    }
+}
+
+// localStorage에서 조장 데이터 로드
+function loadManagerDataFromStorage() {
+    try {
+        const managerTextarea = document.querySelector('.manager');
+        const savedManagerData = localStorage.getItem('managerData');
+        
+        if (savedManagerData && managerTextarea) {
+            managerTextarea.value = savedManagerData;
+            console.log('✅ localStorage에서 조장 데이터 로드 완료:', savedManagerData);
+        } else {
+            console.log('⚠️ localStorage에 저장된 조장 데이터 없음');
+        }
+    } catch (error) {
+        console.error('❌ localStorage에서 조장 데이터 로드 실패:', error);
+    }
+}
+
+// localStorage에서 조원 데이터 로드
+function loadMemberDataFromStorage() {
+    try {
+        const memberTextarea = document.querySelector('.member');
+        const savedMemberData = localStorage.getItem('memberData');
+        
+        if (savedMemberData && memberTextarea) {
+            memberTextarea.value = savedMemberData;
+            console.log('✅ localStorage에서 조원 데이터 로드 완료:', savedMemberData);
+        } else {
+            console.log('⚠️ localStorage에 저장된 조원 데이터 없음');
+        }
+    } catch (error) {
+        console.error('❌ localStorage에서 조원 데이터 로드 실패:', error);
+    }
+}
+
+// localStorage에 저장된 조장/조원 정보를 td에 배치하는 함수
+function loadTdNamesFromStorage() {
+    try {
+        console.log('=== localStorage에서 td 이름 정보 로드 시작 ===');
+        
+        // 가장 최근 조장 배치 정보 가져오기
+        const managerHistory = localStorage.getItem('managerTdNamesHistory');
+        if (managerHistory) {
+            const managerHistoryData = JSON.parse(managerHistory);
+            if (managerHistoryData.length > 0) {
+                const latestManagerData = managerHistoryData[managerHistoryData.length - 1];
+                console.log('최근 조장 배치 정보:', latestManagerData);
+                applyTdNamesToTable(latestManagerData.managerData, 'ban');
+            }
+        }
+        
+        // 가장 최근 조원 배치 정보 가져오기
+        const memberHistory = localStorage.getItem('memberTdNamesHistory');
+        if (memberHistory) {
+            const memberHistoryData = JSON.parse(memberHistory);
+            if (memberHistoryData.length > 0) {
+                const latestMemberData = memberHistoryData[memberHistoryData.length - 1];
+                console.log('최근 조원 배치 정보:', latestMemberData);
+                applyTdNamesToTable(latestMemberData.memberData, 'active');
+            }
+        }
+        
+        console.log('✅ localStorage에서 td 이름 정보 로드 완료');
+        
+    } catch (error) {
+        console.error('❌ localStorage에서 td 이름 정보 로드 실패:', error);
+    }
+}
+
+// td 이름 정보를 테이블에 적용하는 함수
+function applyTdNamesToTable(nameData, targetClass) {
+    try {
+        console.log(`=== ${targetClass} 클래스 td에 이름 적용 시작 ===`);
+        console.log('적용할 이름 데이터:', nameData);
+        
+        Object.keys(nameData).forEach(tdNumber => {
+            const td = document.querySelector(`.tbl td[data-no="${tdNumber}"]`);
+            if (td) {
+                const input = td.querySelector('input[type="text"]');
+                const checkbox = td.querySelector('input[type="checkbox"]');
+                
+                if (input) {
+                    input.value = nameData[tdNumber];
+                    console.log(`TD ${tdNumber}에 "${nameData[tdNumber]}" 적용 완료`);
+                    
+                    // 조장(ban 클래스)인 경우 체크박스도 체크
+                    if (targetClass === 'ban' && checkbox) {
+                        checkbox.checked = true;
+                        td.classList.add('ban');
+                        td.classList.remove('active');
+                        input.disabled = true;
+                        console.log(`TD ${tdNumber} 체크박스 체크 완료`);
+                    }
+                }
+            } else {
+                console.warn(`TD ${tdNumber}를 찾을 수 없음`);
+            }
+        });
+        
+        console.log(`✅ ${targetClass} 클래스 td 이름 적용 완료`);
+        
+    } catch (error) {
+        console.error(`❌ ${targetClass} 클래스 td 이름 적용 실패:`, error);
+    }
+}
+
+// localStorage에 조장 데이터 저장
+function saveManagerDataToStorage() {
+    try {
+        const managerTextarea = document.querySelector('.manager');
+        if (managerTextarea) {
+            localStorage.setItem('managerData', managerTextarea.value);
+            console.log('✅ 조장 데이터 localStorage 저장 완료:', managerTextarea.value);
+        }
+    } catch (error) {
+        console.error('❌ 조장 데이터 localStorage 저장 실패:', error);
+    }
+}
+
+// localStorage에 조원 데이터 저장
+function saveMemberDataToStorage() {
+    try {
+        const memberTextarea = document.querySelector('.member');
+        if (memberTextarea) {
+            localStorage.setItem('memberData', memberTextarea.value);
+            console.log('✅ 조원 데이터 localStorage 저장 완료:', memberTextarea.value);
+        }
+    } catch (error) {
+        console.error('❌ 조원 데이터 localStorage 저장 실패:', error);
+    }
+}
+
+// 조장 데이터 저장 함수
+async function saveManagerData() {
+    try {
+        const managerTextarea = document.querySelector('.manager');
+        const managerData = managerTextarea.value;
+        
+        console.log('조장 데이터 저장 시작:', managerData);
+        
+        // localStorage에도 저장
+        saveManagerDataToStorage();
+        
+        const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_MANAGER, 'POST', {
+            manager: managerData,
+            timestamp: new Date().toISOString()
+        });
+        
+        console.log('조장 데이터 저장 완료:', result);
+        alert('조장 데이터가 서버에 저장되었습니다.');
+        
+    } catch (error) {
+        console.error('조장 데이터 저장 오류:', error);
+        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+    }
+}
+
+// 조원 데이터 저장 함수
+async function saveMemberData() {
+    try {
+        const memberTextarea = document.querySelector('.member');
+        const memberData = memberTextarea.value;
+        
+        console.log('조원 데이터 저장 시작:', memberData);
+        
+        // localStorage에도 저장
+        saveMemberDataToStorage();
+        
+        const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_MEMBER, 'POST', {
+            member: memberData,
+            timestamp: new Date().toISOString()
+        });
+        
+        console.log('조원 데이터 저장 완료:', result);
+        alert('조원 데이터가 서버에 저장되었습니다.');
+        
+    } catch (error) {
+        console.error('조원 데이터 저장 오류:', error);
+        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+    }
+}
+
+// 테이블 설정 저장 함수
+async function saveTableConfig() {
+    try {
+        const rowInput = document.querySelector('.table-row');
+        const colInput = document.querySelector('.table-col');
+        const rowValue = rowInput.value;
+        const colValue = colInput.value;
+        
+        console.log('테이블 설정 저장 시작:', { row: rowValue, col: colValue });
+        
+        const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_TABLE_CONFIG, 'POST', {
+            tableConfig: {
+                rows: parseInt(rowValue),
+                cols: parseInt(colValue)
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+        console.log('테이블 설정 저장 완료:', result);
+        alert('테이블 설정이 서버에 저장되었습니다.');
+        
+    } catch (error) {
+        console.error('테이블 설정 저장 오류:', error);
+        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+    }
+}
+
 let 조장; 
 let 조원; 
 let 고정이름 = [];    
 let 고정번호 = [];
 let draggedElement = null; // 드래그 중인 요소
 let positions = {}; // 위치 정보 저장
+let tdNumbers = []; // td 숫자 배열 저장
+let deletedTdList = []; // 삭제된 td 번호 리스트
+
+// localStorage에서 td 숫자 배열 로드
+function loadTdNumbersFromStorage() {
+    try {
+        const savedTdNumbers = localStorage.getItem('tdNumbers');
+        if (savedTdNumbers) {
+            tdNumbers = JSON.parse(savedTdNumbers);
+            console.log('✅ localStorage에서 td 숫자 배열 로드 완료:', tdNumbers);
+        } else {
+            console.log('⚠️ localStorage에 저장된 td 숫자 배열 없음');
+            tdNumbers = [];
+        }
+    } catch (error) {
+        console.error('❌ localStorage에서 td 숫자 배열 로드 실패:', error);
+        tdNumbers = [];
+    }
+}
+
+// localStorage에 td 숫자 배열 저장
+function saveTdNumbersToStorage() {
+    try {
+        localStorage.setItem('tdNumbers', JSON.stringify(tdNumbers));
+        console.log('✅ td 숫자 배열 localStorage 저장 완료:', tdNumbers);
+    } catch (error) {
+        console.error('❌ td 숫자 배열 localStorage 저장 실패:', error);
+    }
+}
+
+// localStorage에서 행열 정보 로드
+function loadTableConfigFromStorage() {
+    try {
+        const savedConfig = localStorage.getItem('tableConfig');
+        if (savedConfig) {
+            const config = JSON.parse(savedConfig);
+            const rowInput = document.querySelector('.table-row');
+            const colInput = document.querySelector('.table-col');
+            
+            if (rowInput && colInput) {
+                rowInput.value = config.rows || 3;
+                colInput.value = config.cols || 6;
+                console.log('✅ localStorage에서 행열 정보 로드 완료:', config);
+            }
+        } else {
+            console.log('⚠️ localStorage에 저장된 행열 정보 없음');
+        }
+    } catch (error) {
+        console.error('❌ localStorage에서 행열 정보 로드 실패:', error);
+    }
+}
+
+// localStorage에 행열 정보 저장
+function saveTableConfigToStorage() {
+    try {
+        const rowInput = document.querySelector('.table-row');
+        const colInput = document.querySelector('.table-col');
+        
+        if (rowInput && colInput) {
+            const config = {
+                rows: parseInt(rowInput.value) || 3,
+                cols: parseInt(colInput.value) || 6
+            };
+            localStorage.setItem('tableConfig', JSON.stringify(config));
+            console.log('✅ 행열 정보 localStorage 저장 완료:', config);
+        }
+    } catch (error) {
+        console.error('❌ 행열 정보 localStorage 저장 실패:', error);
+    }
+}
+
+// td 숫자 배열 확인 함수 (디버깅용)
+function showTdNumbers() {
+    console.log('=== 현재 td 숫자 배열 ===');
+    console.log('tdNumbers:', tdNumbers);
+    console.log('localStorage에서 로드:', localStorage.getItem('tdNumbers'));
+    console.log('=== td 숫자 배열 확인 완료 ===');
+}
+
+// 행열 정보 확인 함수 (디버깅용)
+function showTableConfig() {
+    console.log('=== 현재 행열 정보 ===');
+    const rowInput = document.querySelector('.table-row');
+    const colInput = document.querySelector('.table-col');
+    console.log('현재 입력값 - 행:', rowInput?.value, '열:', colInput?.value);
+    console.log('localStorage에서 로드:', localStorage.getItem('tableConfig'));
+    console.log('=== 행열 정보 확인 완료 ===');
+}
 
 // JSON 데이터 로드 함수
 async function loadDataFromJSON() {
@@ -37,59 +446,6 @@ async function loadDataFromJSON() {
     } catch (error) {
         console.error('JSON 데이터 로드 실패:', error);
     }
-}
-
-// 서버에서 위치 정보 가져오기
-async function loadPositionsFromServer() {
-    try {
-        console.log('=== 서버에서 위치 정보 가져오기 시작 ===');
-        console.log('요청 URL: http://localhost:8095/seat?id=1');
-        
-        const response = await axios.get('http://localhost:8095/seat?id=1');
-        
-        console.log('서버 응답 상태:', response.status);
-        console.log('서버 응답 데이터:', response.data);
-        
-        if (response.status === 200 && response.data && response.data.positions) {
-            // 서버에서 받은 위치 정보를 localStorage에 저장
-            positions = response.data.positions;
-            localStorage.setItem('seatPositions', JSON.stringify(positions));
-            console.log('✅ 서버에서 위치 정보 가져오기 성공');
-            console.log('저장된 위치 정보:', positions);
-            console.log('localStorage에 저장 완료');
-        } else {
-            console.error('❌ 서버 응답이 유효하지 않음');
-            console.log('응답 데이터 구조:', response.data);
-            throw new Error('서버에서 유효한 위치 정보를 받지 못했습니다.');
-        }
-    } catch (error) {
-        console.warn('⚠️ 서버에서 위치 정보 가져오기 실패');
-        console.error('에러 상세:', error.message);
-        
-        // 기존 localStorage에서 위치 정보 가져오기
-        console.log('=== localStorage에서 위치 정보 가져오기 시도 ===');
-        const savedPositions = localStorage.getItem('seatPositions');
-        
-        if (savedPositions) {
-            try {
-                positions = JSON.parse(savedPositions);
-                console.log('✅ 기존 localStorage에서 위치 정보 로드 성공');
-                console.log('로드된 위치 정보:', positions);
-            } catch (parseError) {
-                console.error('❌ localStorage 위치 정보 파싱 실패');
-                console.error('파싱 에러:', parseError);
-                console.log('localStorage 원본 데이터:', savedPositions);
-                setDefaultPositions();
-            }
-        } else {
-            console.log('⚠️ localStorage에 저장된 위치 정보 없음');
-            setDefaultPositions();
-        }
-    }
-    
-    console.log('=== 최종 위치 정보 ===');
-    console.log('positions 객체:', positions);
-    console.log('=== 위치 정보 로드 완료 ===');
 }
 
 // 기본 위치 정보 설정
@@ -157,12 +513,25 @@ function resetPositions() {
     if (confirm('모든 위치 정보를 초기화하시겠습니까?')) {
         // localStorage 삭제
         localStorage.removeItem('seatPositions');
+        localStorage.removeItem('tdNumbers');
+        localStorage.removeItem('tableConfig');
         
         // positions 객체 초기화
         positions = {
             teacher: { x: 10, y: -70 },
             tds: {}
         };
+        
+        // td 숫자 배열 초기화
+        tdNumbers = [];
+        
+        // 행열 정보 초기화
+        const rowInput = document.querySelector('.table-row');
+        const colInput = document.querySelector('.table-col');
+        if (rowInput && colInput) {
+            rowInput.value = 3;
+            colInput.value = 6;
+        }
         
         // 강사 div 위치 초기화
         const teacherLabel = document.querySelector('.teacher-label');
@@ -180,32 +549,8 @@ function resetPositions() {
             td.style.zIndex = '';
         });
         
-        console.log('위치 정보 초기화 완료');
-        alert('위치 정보가 초기화되었습니다.');
-    }
-}
-
-// 서버로 위치 정보 저장 함수
-async function savePositionsToServer() {
-    try {
-        // 현재 위치 정보 업데이트
-        updateCurrentPositions();
-        
-        const response = await axios.post('http://localhost:8095/seat/save-positions', {
-            positions: positions,
-            timestamp: new Date().toISOString()
-        });
-        
-        if (response.status === 200) {
-            console.log('서버 저장 완료:', response.data);
-            alert('위치 정보가 서버에 저장되었습니다.');
-        } else {
-            console.error('서버 저장 실패:', response.status);
-            alert('서버 저장에 실패했습니다.');
-        }
-    } catch (error) {
-        console.error('서버 저장 오류:', error);
-        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+        console.log('위치 정보, td 숫자 배열, 행열 정보 초기화 완료');
+        alert('모든 정보가 초기화되었습니다.');
     }
 }
 
@@ -244,6 +589,22 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('=== 페이지 로드 시작 ===');
     console.log('DOM 로드 완료, 데이터 로드 시작...');
     
+    // localStorage에서 행열 정보 먼저 로드
+    loadTableConfigFromStorage();
+    
+    // localStorage에서 td 숫자 배열 로드
+    loadTdNumbersFromStorage();
+    
+    // localStorage에서 삭제된 td 리스트 로드
+    loadDeletedTdListFromStorage();
+    
+    // localStorage에서 조장, 조원 데이터 로드
+    loadManagerDataFromStorage();
+    loadMemberDataFromStorage();
+    
+    // textarea 자동 저장 이벤트 리스너 추가
+    addTextareaAutoSaveListeners();
+    
     loadDataFromJSON().then(() => {
         console.log('=== 데이터 로드 완료, 위치 적용 시작 ===');
         // 데이터 로드 완료 후 위치 적용
@@ -251,6 +612,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('위치 적용 지연 실행 시작...');
             applyTeacherPosition();
             applyTdPositions();
+            
+            // localStorage에서 저장된 조장/조원 정보를 td에 배치
+            loadTdNamesFromStorage();
+            
             console.log('=== 페이지 로드 완료 ===');
         }, 100);
     });
@@ -259,7 +624,30 @@ document.addEventListener('DOMContentLoaded', function() {
     initTeacherMove();
     initTdMove();
     console.log('이동 기능 초기화 완료');
+    
+    // 기본 테이블 생성 (페이지 로드 시)
+    createTd();
 });
+
+// textarea 자동 저장 이벤트 리스너 추가
+function addTextareaAutoSaveListeners() {
+    const managerTextarea = document.querySelector('.manager');
+    const memberTextarea = document.querySelector('.member');
+    
+    if (managerTextarea) {
+        managerTextarea.addEventListener('input', function() {
+            saveManagerDataToStorage();
+        });
+        console.log('✅ 조장 textarea 자동 저장 이벤트 리스너 추가 완료');
+    }
+    
+    if (memberTextarea) {
+        memberTextarea.addEventListener('input', function() {
+            saveMemberDataToStorage();
+        });
+        console.log('✅ 조원 textarea 자동 저장 이벤트 리스너 추가 완료');
+    }
+}
 
 // 드래그 앤 드롭 관련 함수들
 function addDragAndDropListeners() {
@@ -298,7 +686,10 @@ function addDragAndDropListeners() {
             this.classList.remove('drag-over');
             
             if (draggedElement && draggedElement !== this) {
-                // 체크박스 상태 저장
+                // 드래그된 요소의 opacity 해제
+                draggedElement.style.opacity = '1';
+                
+                // 체크박스 상태 저장 (빈칸 TD는 체크박스가 없을 수 있음)
                 const draggedCheckbox = draggedElement.querySelector('input[type="checkbox"]');
                 const targetCheckbox = this.querySelector('input[type="checkbox"]');
                 const draggedChecked = draggedCheckbox ? draggedCheckbox.checked : false;
@@ -308,16 +699,22 @@ function addDragAndDropListeners() {
                 const tempHTML = this.innerHTML;
                 const tempDataNo = this.getAttribute('data-no');
                 const tempClassList = this.className;
+                const tempDraggable = this.getAttribute('draggable');
+                const tempStyle = this.getAttribute('style');
                 
                 this.innerHTML = draggedElement.innerHTML;
                 this.setAttribute('data-no', draggedElement.getAttribute('data-no'));
                 this.className = draggedElement.className;
+                this.setAttribute('draggable', draggedElement.getAttribute('draggable'));
+                this.setAttribute('style', draggedElement.getAttribute('style'));
                 
                 draggedElement.innerHTML = tempHTML;
                 draggedElement.setAttribute('data-no', tempDataNo);
                 draggedElement.className = tempClassList;
+                draggedElement.setAttribute('draggable', tempDraggable);
+                draggedElement.setAttribute('style', tempStyle);
                 
-                // 체크박스 상태 복원
+                // 체크박스 상태 복원 (체크박스가 있는 경우에만)
                 const newDraggedCheckbox = draggedElement.querySelector('input[type="checkbox"]');
                 const newTargetCheckbox = this.querySelector('input[type="checkbox"]');
                 
@@ -355,6 +752,9 @@ function addDragAndDropListeners() {
                 
                 // 고정 상태 업데이트
                 updateFixedStatus();
+                
+                // draggedElement 초기화
+                draggedElement = null;
             }
         });
     });
@@ -427,21 +827,207 @@ const createTd = ()=>{
         tbl.replaceChildren();
     }
 
+    // 행열생성 버튼 클릭 시 tdNumbers와 tableConfig만 삭제 (positions는 유지)
+    console.log('=== 행열생성 버튼 클릭 - tdNumbers, tableConfig 초기화 ===');
+    localStorage.removeItem('tdNumbers');
+    localStorage.removeItem('tableConfig');
+    
+    // positions는 유지 (기존 위치 정보 보존)
+    console.log('기존 positions 정보 유지:', positions);
+    
+    // td 숫자 배열만 초기화
+    tdNumbers = [];
+    
+    // 삭제된 td 리스트 로드 (유지)
+    loadDeletedTdListFromStorage();
+    
+    console.log('✅ tdNumbers, tableConfig 초기화 완료 (positions, deletedTdList 유지)');
+    
+    // 새로운 td 숫자 배열 생성
+    const totalCells = row * col;
+    for (let i = 1; i <= totalCells; i++) {
+        tdNumbers.push(i);
+    }
+    console.log('새로운 td 숫자 배열 생성:', tdNumbers);
+    console.log('삭제된 td 리스트:', deletedTdList);
+    
+    // localStorage에 새로운 td 숫자 배열 저장
+    saveTdNumbersToStorage();
+    
+    // localStorage에 행열 정보 저장
+    saveTableConfigToStorage();
+
     let cnt = 1;
     for(i=0;i<row;i++){
         const tr = document.createElement('tr');
        
         for(j=0;j<col;j++){
-            // localStorage에 삭제된 TD 정보가 있는지 확인
-            if (positions.tds && positions.tds[cnt] && positions.tds[cnt].deleted) {
-                console.log(`TD ${cnt}는 삭제된 상태이므로 건너뜀`);
-                cnt++;
-                continue;
-            }
-
             const td = document.createElement("td");
-            td.innerHTML=cnt;
-            td.setAttribute("data-no",cnt);
+            // 새로운 tdNumbers 배열의 해당 인덱스 값 사용
+            const tdNumber = tdNumbers[cnt - 1] || cnt;
+            
+            // 삭제 리스트에 있는 번호인지 확인
+            if (deletedTdList.includes(tdNumber)) {
+                // 삭제된 TD는 빈칸으로 표시
+                td.innerHTML = '';
+                td.setAttribute("data-no", tdNumber);
+                td.classList.add('deleted');
+                td.style.backgroundColor = '#f8f9fa';
+                td.style.border = '1px dashed #dee2e6';
+                td.style.color = '#6c757d';
+                
+                // 복원 버튼 생성 함수
+                function createRestoreButton() {
+                    const restoreButton = document.createElement('button');
+                    restoreButton.innerHTML = "↺";
+                    restoreButton.setAttribute('class','td-restore-btn');
+                    restoreButton.setAttribute('style','position:absolute;right:0px;top:0px;width:20px;height:20px;border-radius:0 5px 0 5px;background-color:#28a745;color:white;border:none;font-size:14px;font-weight:bold;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.2);');
+                    
+                    restoreButton.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        if (confirm(`TD ${tdNumber}를 복원하시겠습니까?`)) {
+                            // 삭제 리스트에서 제거
+                            const index = deletedTdList.indexOf(tdNumber);
+                            if (index > -1) {
+                                deletedTdList.splice(index, 1);
+                                saveDeletedTdListToStorage();
+                                console.log(`TD ${tdNumber}가 삭제 리스트에서 제거됨`);
+                            }
+                            
+                            // localStorage에서 해당 TD 위치 정보의 삭제 상태 해제
+                            if (positions.tds && positions.tds[tdNumber]) {
+                                delete positions.tds[tdNumber].deleted;
+                                localStorage.setItem('seatPositions', JSON.stringify(positions));
+                            }
+                            
+                            // TD를 정상 상태로 복원
+                            td.innerHTML = tdNumber;
+                            td.classList.remove('deleted');
+                            td.classList.add('non-fixed', 'active');
+                            td.style.backgroundColor = '';
+                            td.style.border = '';
+                            td.style.color = '';
+                            td.setAttribute('draggable', 'true');
+                            
+                            // 복원 버튼 제거
+                            restoreButton.remove();
+                            
+                            // 정상 TD 요소들 추가
+                            const chk = document.createElement('input');
+                            chk.setAttribute('type','checkbox');
+                            td.appendChild(chk);
+                            addCheckboxEventListener(chk);
+
+                            //FIXED 자리 지정
+                            const fixedIcon = document.createElement('span');
+                            fixedIcon.innerHTML = "push_pin";
+                            fixedIcon.setAttribute('class','material-symbols-outlined pin-icon');
+                            fixedIcon.setAttribute('style','position:absolute;left:80%;top:5px;font-size.0.5rem;z-index:5;cursor:pointer;font-size:1.25rem;color:green');
+
+                            fixedIcon.addEventListener('click',function(){
+                                
+                                if(fixedIcon.classList.contains('fixed')){
+                                   
+                                    fixedIcon.style.color="green";
+                                    fixedIcon.classList.remove('fixed');
+                                    const tdEl = fixedIcon.parentNode;
+                                    const std_name =  tdEl.querySelector("input[type='text']").value;
+                                    고정이름.pop(std_name);
+                                    const no = tdEl.getAttribute('data-no');
+                                    고정번호.pop(no);
+
+                                    tdEl.classList.remove('fixed');
+                                    tdEl.classList.add('non-fixed');
+
+                                    
+
+                                    console.log(고정이름)
+                                    console.log(고정번호)
+
+                                }else{
+                                    fixedIcon.style.color="red";
+                                    fixedIcon.classList.add('fixed');
+
+                                    const tdEl = fixedIcon.parentNode;
+                                    const std_name =  tdEl.querySelector("input[type='text']").value;
+                                    const no = tdEl.getAttribute('data-no');
+                                    고정이름.push(std_name);
+                                    고정번호.push(no);
+                                    tdEl.classList.add('fixed');
+                                    tdEl.classList.remove('non-fixed');
+
+                                    console.log(고정이름)
+                                    console.log(고정번호)
+                                }
+                            })
+
+                            td.appendChild(fixedIcon);
+
+                            // 이동 아이콘 추가
+                            const moveIcon = document.createElement('span');
+                            moveIcon.innerHTML = "arrows_output";
+                            moveIcon.setAttribute('class','material-symbols-outlined td-move-icon');
+                            moveIcon.setAttribute('style','position:absolute;right:2px;top:2px;font-size:14px;z-index:5;cursor:pointer;color:#666;transition:color 0.2s ease;');
+
+                            td.appendChild(moveIcon);
+
+                            // X 버튼 추가 (삭제 버튼)
+                            const deleteButton = document.createElement('button');
+                            deleteButton.innerHTML = "×";
+                            deleteButton.setAttribute('class','td-delete-btn');
+                            deleteButton.setAttribute('style','position:absolute;right:0px;top:0px;width:20px;height:20px;border-radius:0 5px 0 5px;background-color:#ff4444;color:white;border:none;font-size:14px;font-weight:bold;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.2);');
+                            
+                            deleteButton.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                if (confirm(`TD ${tdNumber}를 삭제하시겠습니까?`)) {
+                                    // 삭제 리스트에 추가
+                                    addToDeletedList(tdNumber);
+                                    
+                                    // localStorage에서 해당 TD 위치 정보를 삭제 상태로 표시
+                                    if (!positions.tds) positions.tds = {};
+                                    positions.tds[tdNumber] = { deleted: true };
+                                    localStorage.setItem('seatPositions', JSON.stringify(positions));
+                                    
+                                    console.log(`TD ${tdNumber}가 삭제 리스트에 추가되고 localStorage에 저장됨`);
+                                    
+                                    // TD 요소를 빈칸으로 변경
+                                    td.innerHTML = '';
+                                    td.classList.remove('non-fixed', 'active');
+                                    td.classList.add('deleted');
+                                    td.style.backgroundColor = '#f8f9fa';
+                                    td.style.border = '1px dashed #dee2e6';
+                                    td.style.color = '#6c757d';
+                                    td.removeAttribute('draggable');
+                                    
+                                    // 복원 버튼 다시 추가
+                                    const newRestoreButton = createRestoreButton();
+                                    td.appendChild(newRestoreButton);
+                                    
+                                    console.log(`TD ${tdNumber} 삭제됨 (빈칸으로 표시)`);
+                                }
+                            });
+
+                            td.appendChild(deleteButton);
+
+                            const input = document.createElement('input');
+                            input.setAttribute('type','text');
+                            td.appendChild(input);
+
+                            console.log(`TD ${tdNumber} 복원 완료`);
+                        }
+                    });
+                    
+                    return restoreButton;
+                }
+                
+                // 복원 버튼 추가
+                const restoreButton = createRestoreButton();
+                td.appendChild(restoreButton);
+                console.log(`TD ${tdNumber}는 삭제된 상태로 빈칸 표시`);
+            } else {
+                // 정상 TD 표시
+                td.innerHTML = tdNumber;
+                td.setAttribute("data-no", tdNumber);
             td.classList.add('non-fixed');
             
             // 드래그 가능하도록 설정
@@ -515,16 +1101,27 @@ const createTd = ()=>{
             
             deleteButton.addEventListener('click', function(e) {
                 e.stopPropagation();
-                if (confirm(`TD ${cnt}를 삭제하시겠습니까?`)) {
+                    if (confirm(`TD ${tdNumber}를 삭제하시겠습니까?`)) {
+                        // 삭제 리스트에 추가
+                        addToDeletedList(tdNumber);
+                        
                     // localStorage에서 해당 TD 위치 정보를 삭제 상태로 표시
                     if (!positions.tds) positions.tds = {};
-                    positions.tds[cnt] = { deleted: true };
+                        positions.tds[tdNumber] = { deleted: true };
                     localStorage.setItem('seatPositions', JSON.stringify(positions));
-                    console.log(`TD ${cnt}가 삭제 상태로 localStorage에 저장됨`);
-                    
-                    // TD 요소 제거
-                    td.remove();
-                    console.log(`TD ${cnt} 삭제됨`);
+                        
+                        console.log(`TD ${tdNumber}가 삭제 리스트에 추가되고 localStorage에 저장됨`);
+                        
+                        // TD 요소를 빈칸으로 변경
+                        td.innerHTML = '';
+                        td.classList.remove('non-fixed', 'active');
+                        td.classList.add('deleted');
+                        td.style.backgroundColor = '#f8f9fa';
+                        td.style.border = '1px dashed #dee2e6';
+                        td.style.color = '#6c757d';
+                        td.removeAttribute('draggable');
+                        
+                        console.log(`TD ${tdNumber} 삭제됨 (빈칸으로 표시)`);
                 }
             });
 
@@ -535,6 +1132,7 @@ const createTd = ()=>{
             td.appendChild(input);
 
             td.classList.add('active');
+            }
             
             tr.appendChild(td);
 
@@ -546,12 +1144,15 @@ const createTd = ()=>{
     // 테이블 생성 후 드래그 앤 드롭 리스너 추가
     addDragAndDropListeners();
     
-    // 위치 정보 적용
+    // 위치 정보 적용 (기존 positions 정보 사용)
     setTimeout(() => {
         applyTdPositions();
     }, 100);
+    
+    console.log('✅ 새로운 테이블 생성 완료. td 숫자 배열:', tdNumbers);
+    console.log('기존 positions 정보 유지됨:', positions);
+    console.log('삭제된 td 리스트:', deletedTdList);
 }
-createTd();
 
 //셔플함수
 function shuffleArray(array) {
@@ -620,6 +1221,9 @@ stop.addEventListener("click",function(){
 
     clearInterval(interValObj);
     interValObj=null;
+    
+    // 조원랜덤 중지 시 현재 td번호와 이름을 localStorage에 저장
+    saveCurrentMemberTdNamesToStorage();
 })
 
 
@@ -654,6 +1258,9 @@ stop2.addEventListener("click",function(){
 
     clearInterval(interValObj2);
     interValObj2=null;
+    
+    // 조장랜덤 중지 시 현재 조장 td번호와 이름을 localStorage에 저장
+    saveCurrentManagerTdNamesToStorage();
 })
 
 
@@ -777,21 +1384,33 @@ function initTdMove() {
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('td-move-icon')) {
             e.stopPropagation();
-            isTdMoving = !isTdMoving;
-            currentTd = e.target.parentNode;
-            
-            if (isTdMoving) {
-                e.target.textContent = 'close';
-                e.target.style.color = '#ff4444';
-                currentTd.style.cursor = 'grabbing';
-                document.body.style.cursor = 'crosshair';
-            } else {
+
+            // 이미 다른 td가 이동 모드였다면 강제 종료
+            if (isTdMoving && currentTd && currentTd !== e.target.parentNode) {
+                const prevIcon = currentTd.querySelector('.td-move-icon');
+                if (prevIcon) {
+                    prevIcon.textContent = 'arrows_output';
+                    prevIcon.style.color = '#666';
+                }
+                currentTd.style.cursor = 'grab';
+                currentTd.style.zIndex = 'auto';
+                isTdDragging = false;
+            }
+
+            // 토글 이동 모드
+            if (currentTd === e.target.parentNode && isTdMoving) {
+                // 같은 td를 다시 클릭하면 이동 모드 종료
                 e.target.textContent = 'arrows_output';
                 e.target.style.color = '#666';
                 currentTd.style.cursor = 'grab';
                 document.body.style.cursor = 'default';
-                isTdDragging = false;
-                currentTd = null;
+            } else {
+                // 새 td 이동 모드 시작
+                isTdMoving = true;
+                currentTd = e.target.parentNode;
+                e.target.textContent = 'close';
+                e.target.style.color = '#ff4444';
+                currentTd.style.cursor = 'grabbing';
             }
         }
     });
@@ -882,85 +1501,208 @@ function initTdMove() {
     });
 }
 
-// 조장 데이터 저장 함수
-async function saveManagerData() {
+// localStorage에서 삭제된 td 리스트 로드
+function loadDeletedTdListFromStorage() {
     try {
-        const managerTextarea = document.querySelector('.manager');
-        const managerData = managerTextarea.value;
-        
-        console.log('조장 데이터 저장 시작:', managerData);
-        
-        const response = await axios.post('http://localhost:8095/seat/save-manager', {
-            manager: managerData,
-            timestamp: new Date().toISOString()
-        });
-        
-        if (response.status === 200) {
-            console.log('조장 데이터 저장 완료:', response.data);
-            alert('조장 데이터가 서버에 저장되었습니다.');
+        const savedDeletedList = localStorage.getItem('deletedTdList');
+        if (savedDeletedList) {
+            deletedTdList = JSON.parse(savedDeletedList);
+            console.log('✅ localStorage에서 삭제된 td 리스트 로드 완료:', deletedTdList);
         } else {
-            console.error('조장 데이터 저장 실패:', response.status);
-            alert('조장 데이터 저장에 실패했습니다.');
+            console.log('⚠️ localStorage에 저장된 삭제된 td 리스트 없음');
+            deletedTdList = [];
         }
     } catch (error) {
-        console.error('조장 데이터 저장 오류:', error);
-        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+        console.error('❌ localStorage에서 삭제된 td 리스트 로드 실패:', error);
+        deletedTdList = [];
     }
 }
 
-// 조원 데이터 저장 함수
-async function saveMemberData() {
+// localStorage에 삭제된 td 리스트 저장
+function saveDeletedTdListToStorage() {
     try {
-        const memberTextarea = document.querySelector('.member');
-        const memberData = memberTextarea.value;
-        
-        console.log('조원 데이터 저장 시작:', memberData);
-        
-        const response = await axios.post('http://localhost:8095/seat/save-member', {
-            member: memberData,
-            timestamp: new Date().toISOString()
-        });
-        
-        if (response.status === 200) {
-            console.log('조원 데이터 저장 완료:', response.data);
-            alert('조원 데이터가 서버에 저장되었습니다.');
-        } else {
-            console.error('조원 데이터 저장 실패:', response.status);
-            alert('조원 데이터 저장에 실패했습니다.');
-        }
+        localStorage.setItem('deletedTdList', JSON.stringify(deletedTdList));
+        console.log('✅ 삭제된 td 리스트 localStorage 저장 완료:', deletedTdList);
     } catch (error) {
-        console.error('조원 데이터 저장 오류:', error);
-        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+        console.error('❌ 삭제된 td 리스트 localStorage 저장 실패:', error);
     }
 }
 
-// 테이블 설정 저장 함수
-async function saveTableConfig() {
+// td를 삭제 리스트에 추가
+function addToDeletedList(tdNumber) {
+    if (!deletedTdList.includes(tdNumber)) {
+        deletedTdList.push(tdNumber);
+        saveDeletedTdListToStorage();
+        console.log(`TD ${tdNumber}가 삭제 리스트에 추가됨`);
+    }
+}
+
+// 삭제된 td 리스트 확인 함수 (디버깅용)
+function showDeletedTdList() {
+    console.log('=== 삭제된 td 리스트 ===');
+    console.log('deletedTdList:', deletedTdList);
+    console.log('localStorage에서 로드:', localStorage.getItem('deletedTdList'));
+    console.log('=== 삭제된 td 리스트 확인 완료 ===');
+}
+
+// 현재 조원 td번호와 이름을 localStorage에 저장하는 함수
+function saveCurrentMemberTdNamesToStorage() {
     try {
-        const rowInput = document.querySelector('.table-row');
-        const colInput = document.querySelector('.table-col');
-        const rowValue = rowInput.value;
-        const colValue = colInput.value;
+        const tds = document.querySelectorAll('.tbl td.active.non-fixed');
+        const currentMemberData = {};
         
-        console.log('테이블 설정 저장 시작:', { row: rowValue, col: colValue });
-        
-        const response = await axios.post('http://localhost:8095/seat/save-table-config', {
-            tableConfig: {
-                rows: parseInt(rowValue),
-                cols: parseInt(colValue)
-            },
-            timestamp: new Date().toISOString()
+        tds.forEach(td => {
+            const dataNo = td.getAttribute('data-no');
+            const input = td.querySelector('input[type="text"]');
+            
+            if (dataNo && input && input.value.trim() !== '') {
+                currentMemberData[dataNo] = input.value.trim();
+            }
         });
         
-        if (response.status === 200) {
-            console.log('테이블 설정 저장 완료:', response.data);
-            alert('테이블 설정이 서버에 저장되었습니다.');
-        } else {
-            console.error('테이블 설정 저장 실패:', response.status);
-            alert('테이블 설정 저장에 실패했습니다.');
-        }
+        // 기존 조원 데이터 로드
+        const existingData = localStorage.getItem('memberTdNamesHistory');
+        let historyData = existingData ? JSON.parse(existingData) : [];
+        
+        // 새로운 데이터 추가 (타임스탬프 포함)
+        const newEntry = {
+            timestamp: new Date().toISOString(),
+            memberData: currentMemberData
+        };
+        
+        historyData.push(newEntry);
+        
+        // localStorage에 저장
+        localStorage.setItem('memberTdNamesHistory', JSON.stringify(historyData));
+        
+        console.log('✅ 현재 조원 td번호와 이름이 localStorage에 저장됨:', currentMemberData);
+        console.log('저장된 조원 히스토리 개수:', historyData.length);
+        
     } catch (error) {
-        console.error('테이블 설정 저장 오류:', error);
-        alert('서버 연결에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+        console.error('❌ 조원 td번호와 이름 저장 실패:', error);
     }
+}
+
+// 현재 조장 td번호와 이름을 localStorage에 저장하는 함수
+function saveCurrentManagerTdNamesToStorage() {
+    try {
+        const tds = document.querySelectorAll('.tbl td.ban.non-fixed');
+        const currentManagerData = {};
+        
+        tds.forEach(td => {
+            const dataNo = td.getAttribute('data-no');
+            const input = td.querySelector('input[type="text"]');
+            
+            if (dataNo && input && input.value.trim() !== '') {
+                currentManagerData[dataNo] = input.value.trim();
+            }
+        });
+        
+        // 기존 조장 데이터 로드
+        const existingData = localStorage.getItem('managerTdNamesHistory');
+        let historyData = existingData ? JSON.parse(existingData) : [];
+        
+        // 새로운 데이터 추가 (타임스탬프 포함)
+        const newEntry = {
+            timestamp: new Date().toISOString(),
+            managerData: currentManagerData
+        };
+        
+        historyData.push(newEntry);
+        
+        // localStorage에 저장
+        localStorage.setItem('managerTdNamesHistory', JSON.stringify(historyData));
+        
+        console.log('✅ 현재 조장 td번호와 이름이 localStorage에 저장됨:', currentManagerData);
+        console.log('저장된 조장 히스토리 개수:', historyData.length);
+        
+    } catch (error) {
+        console.error('❌ 조장 td번호와 이름 저장 실패:', error);
+    }
+}
+
+// 저장된 조원 td번호와 이름 히스토리 확인 함수 (디버깅용)
+function showMemberTdNamesHistory() {
+    console.log('=== 저장된 조원 td번호와 이름 히스토리 ===');
+    const historyData = localStorage.getItem('memberTdNamesHistory');
+    if (historyData) {
+        const history = JSON.parse(historyData);
+        console.log('총 저장된 조원 히스토리 개수:', history.length);
+        history.forEach((entry, index) => {
+            console.log(`[${index + 1}] ${entry.timestamp}:`, entry.memberData);
+        });
+    } else {
+        console.log('저장된 조원 히스토리가 없습니다.');
+    }
+    console.log('=== 조원 히스토리 확인 완료 ===');
+}
+
+// 저장된 조장 td번호와 이름 히스토리 확인 함수 (디버깅용)
+function showManagerTdNamesHistory() {
+    console.log('=== 저장된 조장 td번호와 이름 히스토리 ===');
+    const historyData = localStorage.getItem('managerTdNamesHistory');
+    if (historyData) {
+        const history = JSON.parse(historyData);
+        console.log('총 저장된 조장 히스토리 개수:', history.length);
+        history.forEach((entry, index) => {
+            console.log(`[${index + 1}] ${entry.timestamp}:`, entry.managerData);
+        });
+    } else {
+        console.log('저장된 조장 히스토리가 없습니다.');
+    }
+    console.log('=== 조장 히스토리 확인 완료 ===');
+}
+
+// 현재 td번호와 이름을 localStorage에 저장하는 함수 (기존 함수 - 모든 td 저장)
+function saveCurrentTdNamesToStorage() {
+    try {
+        const tds = document.querySelectorAll('.tbl td');
+        const currentTdData = {};
+        
+        tds.forEach(td => {
+            const dataNo = td.getAttribute('data-no');
+            const input = td.querySelector('input[type="text"]');
+            
+            if (dataNo && input && input.value.trim() !== '') {
+                currentTdData[dataNo] = input.value.trim();
+            }
+        });
+        
+        // 기존 데이터 로드
+        const existingData = localStorage.getItem('tdNamesHistory');
+        let historyData = existingData ? JSON.parse(existingData) : [];
+        
+        // 새로운 데이터 추가 (타임스탬프 포함)
+        const newEntry = {
+            timestamp: new Date().toISOString(),
+            tdData: currentTdData
+        };
+        
+        historyData.push(newEntry);
+        
+        // localStorage에 저장
+        localStorage.setItem('tdNamesHistory', JSON.stringify(historyData));
+        
+        console.log('✅ 현재 td번호와 이름이 localStorage에 저장됨:', currentTdData);
+        console.log('저장된 히스토리 개수:', historyData.length);
+        
+    } catch (error) {
+        console.error('❌ td번호와 이름 저장 실패:', error);
+    }
+}
+
+// 저장된 td번호와 이름 히스토리 확인 함수 (디버깅용)
+function showTdNamesHistory() {
+    console.log('=== 저장된 td번호와 이름 히스토리 ===');
+    const historyData = localStorage.getItem('tdNamesHistory');
+    if (historyData) {
+        const history = JSON.parse(historyData);
+        console.log('총 저장된 히스토리 개수:', history.length);
+        history.forEach((entry, index) => {
+            console.log(`[${index + 1}] ${entry.timestamp}:`, entry.tdData);
+        });
+    } else {
+        console.log('저장된 히스토리가 없습니다.');
+    }
+    console.log('=== 히스토리 확인 완료 ===');
 }

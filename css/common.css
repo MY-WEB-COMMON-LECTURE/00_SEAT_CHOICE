@@ -308,11 +308,13 @@ td span.td-move-icon{
   
     position:relative;
     margin-top:100px;    
+  
 }
 .show-block{
     min-height:50vh;
     background-color: #f8f9fa;
     position: relative;
+    margin-bottom:100px;
 }
 
 .tbl td{
