@@ -370,3 +370,15 @@ td span.td-move-icon{
 .td-delete-btn:active {
     transform: scale(0.95);
 }
+
+.reset-button{
+   position:fixed;
+   top:40%;
+   right:10px;
+   z-index:1000;
+   display:flex;
+   gap:10px;
+}
+.reset-button button{
+    display:flex;
+}
