@@ -1,4 +1,3 @@
-
 *{
     box-sizing: border-box;
 }
@@ -45,8 +44,32 @@ table td
     border-radius: 5px;
     box-shadow: 5px 5px 5px lightgray;
     
+    /* 드래그 앤 드롭 관련 스타일 */
+    cursor: grab;
+    transition: all 0.2s ease;
+    user-select: none;
 }
 
+table td:active {
+    cursor: grabbing;
+}
+
+table td:hover {
+    transform: translateY(-2px);
+    box-shadow: 7px 7px 7px lightgray;
+}
+
+/* 드래그 중인 요소 스타일 */
+table td[draggable="true"]:active {
+    transform: scale(1.05);
+    z-index: 1000;
+}
+
+/* 드롭 가능한 영역 표시 */
+table td.drag-over {
+    background-color: #e3f2fd !important;
+    border: 2px dashed #2196f3;
+}
 
 table::before{
     content:"강사";

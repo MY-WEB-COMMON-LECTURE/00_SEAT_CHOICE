@@ -4,12 +4,94 @@ let 조장;
 let 조원; 
 let 고정이름 = [];    
 let 고정번호 = [];
+let draggedElement = null; // 드래그 중인 요소
 
- 
+// 드래그 앤 드롭 관련 함수들
+function addDragAndDropListeners() {
+    const tds = document.querySelectorAll('.tbl td');
+    
+    tds.forEach(td => {
+        // 드래그 시작
+        td.addEventListener('dragstart', function(e) {
+            draggedElement = this;
+            this.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        });
+        
+        // 드래그 종료
+        td.addEventListener('dragend', function(e) {
+            this.style.opacity = '1';
+            draggedElement = null;
+        });
+        
+        // 드래그 오버 (드롭 영역 표시)
+        td.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+        });
+        
+        // 드래그 리브 (드롭 영역 표시 제거)
+        td.addEventListener('dragleave', function(e) {
+            this.classList.remove('drag-over');
+        });
+        
+        // 드롭
+        td.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            if (draggedElement && draggedElement !== this) {
+                // 두 td의 내용을 교환
+                const tempHTML = this.innerHTML;
+                const tempDataNo = this.getAttribute('data-no');
+                const tempClassList = this.className;
+                
+                this.innerHTML = draggedElement.innerHTML;
+                this.setAttribute('data-no', draggedElement.getAttribute('data-no'));
+                this.className = draggedElement.className;
+                
+                draggedElement.innerHTML = tempHTML;
+                draggedElement.setAttribute('data-no', tempDataNo);
+                draggedElement.className = tempClassList;
+                
+                // 고정 상태 업데이트
+                updateFixedStatus();
+            }
+        });
+    });
+}
+
+// 고정 상태 업데이트 함수
+function updateFixedStatus() {
+    const tds = document.querySelectorAll('.tbl td');
+    고정이름 = [];
+    고정번호 = [];
+    
+    tds.forEach(td => {
+        const fixedIcon = td.querySelector('.material-symbols-outlined');
+        const input = td.querySelector('input[type="text"]');
+        
+        if (fixedIcon && fixedIcon.classList.contains('fixed')) {
+            const std_name = input.value;
+            const no = td.getAttribute('data-no');
+            
+            if (std_name && !고정이름.includes(std_name)) {
+                고정이름.push(std_name);
+            }
+            if (no && !고정번호.includes(no)) {
+                고정번호.push(no);
+            }
+        }
+    });
+    
+    console.log('고정이름 업데이트:', 고정이름);
+    console.log('고정번호 업데이트:', 고정번호);
+}
+
 // 테이블 생성 함수
-
 const createTd = ()=>{
-
 
         
 
@@ -34,6 +116,9 @@ const createTd = ()=>{
             td.innerHTML=cnt;
             td.setAttribute("data-no",cnt);
             td.classList.add('non-fixed');
+            
+            // 드래그 가능하도록 설정
+            td.setAttribute('draggable', 'true');
 
             const chk = document.createElement('input');
             chk.setAttribute('type','checkbox');
@@ -97,8 +182,8 @@ const createTd = ()=>{
 
                     const tdEl = fixedIcon.parentNode;
                     const std_name =  tdEl.querySelector("input[type='text']").value;
-                    고정이름.push(std_name);
                     const no = tdEl.getAttribute('data-no');
+                    고정이름.push(std_name);
                     고정번호.push(no);
                     tdEl.classList.add('fixed');
                     tdEl.classList.remove('non-fixed');
@@ -126,6 +211,9 @@ const createTd = ()=>{
         }
         tbl.appendChild(tr);
     }
+    
+    // 테이블 생성 후 드래그 앤 드롭 리스너 추가
+    addDragAndDropListeners();
 }
 createTd();
 
@@ -251,3 +339,9 @@ stop2.addEventListener("click",function(){
 
 
 //정처산기 반 배정위한 FIX ITEM 선정(지울예정)
+
+// 테이블 회전 기능
+function rotateTable() {
+    const tableBlock = document.querySelector('.table-block');
+    tableBlock.classList.toggle('rotated');
+}
