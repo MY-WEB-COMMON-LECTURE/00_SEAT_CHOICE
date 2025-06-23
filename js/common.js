@@ -6,6 +6,40 @@ let 고정이름 = [];
 let 고정번호 = [];
 let draggedElement = null; // 드래그 중인 요소
 
+// JSON 데이터 로드 함수
+async function loadDataFromJSON() {
+    try {
+        // 조장 데이터 로드
+        const jojangResponse = await fetch('dataset/jojang.json');
+        const jojangData = await jojangResponse.json();
+        
+        // 조원 데이터 로드
+        const jooneResponse = await fetch('dataset/joone.json');
+        const jooneData = await jooneResponse.json();
+        
+        // 입력란에 데이터 설정
+        const managerTextarea = document.querySelector('.manager');
+        const memberTextarea = document.querySelector('.member');
+        
+        if (managerTextarea && jojangData.jojang) {
+            managerTextarea.value = jojangData.jojang.join(',');
+        }
+        
+        if (memberTextarea && jooneData.joone) {
+            memberTextarea.value = jooneData.joone.join(',');
+        }
+        
+        console.log('JSON 데이터 로드 완료');
+    } catch (error) {
+        console.error('JSON 데이터 로드 실패:', error);
+    }
+}
+
+// 페이지 로드 시 데이터 로드
+document.addEventListener('DOMContentLoaded', function() {
+    loadDataFromJSON();
+});
+
 // 드래그 앤 드롭 관련 함수들
 function addDragAndDropListeners() {
     const tds = document.querySelectorAll('.tbl td');
@@ -43,6 +77,12 @@ function addDragAndDropListeners() {
             this.classList.remove('drag-over');
             
             if (draggedElement && draggedElement !== this) {
+                // 체크박스 상태 저장
+                const draggedCheckbox = draggedElement.querySelector('input[type="checkbox"]');
+                const targetCheckbox = this.querySelector('input[type="checkbox"]');
+                const draggedChecked = draggedCheckbox ? draggedCheckbox.checked : false;
+                const targetChecked = targetCheckbox ? targetCheckbox.checked : false;
+                
                 // 두 td의 내용을 교환
                 const tempHTML = this.innerHTML;
                 const tempDataNo = this.getAttribute('data-no');
@@ -55,6 +95,42 @@ function addDragAndDropListeners() {
                 draggedElement.innerHTML = tempHTML;
                 draggedElement.setAttribute('data-no', tempDataNo);
                 draggedElement.className = tempClassList;
+                
+                // 체크박스 상태 복원
+                const newDraggedCheckbox = draggedElement.querySelector('input[type="checkbox"]');
+                const newTargetCheckbox = this.querySelector('input[type="checkbox"]');
+                
+                if (newDraggedCheckbox) {
+                    newDraggedCheckbox.checked = targetChecked;
+                    // 체크박스 상태에 따른 클래스 업데이트
+                    if (targetChecked) {
+                        draggedElement.classList.add("ban");
+                        draggedElement.classList.remove('active');
+                        newDraggedCheckbox.disabled = true;
+                    } else {
+                        draggedElement.classList.remove("ban");
+                        draggedElement.classList.add('active');
+                        newDraggedCheckbox.disabled = false;
+                    }
+                    // 체크박스 이벤트 리스너 다시 연결
+                    addCheckboxEventListener(newDraggedCheckbox);
+                }
+                
+                if (newTargetCheckbox) {
+                    newTargetCheckbox.checked = draggedChecked;
+                    // 체크박스 상태에 따른 클래스 업데이트
+                    if (draggedChecked) {
+                        this.classList.add("ban");
+                        this.classList.remove('active');
+                        newTargetCheckbox.disabled = true;
+                    } else {
+                        this.classList.remove("ban");
+                        this.classList.add('active');
+                        newTargetCheckbox.disabled = false;
+                    }
+                    // 체크박스 이벤트 리스너 다시 연결
+                    addCheckboxEventListener(newTargetCheckbox);
+                }
                 
                 // 고정 상태 업데이트
                 updateFixedStatus();
@@ -90,6 +166,33 @@ function updateFixedStatus() {
     console.log('고정번호 업데이트:', 고정번호);
 }
 
+// 체크박스 이벤트 리스너 함수
+function addCheckboxEventListener(checkbox) {
+    const parentNode = checkbox.parentNode;
+    
+    // 기존 이벤트 리스너 제거 (중복 방지)
+    checkbox.removeEventListener('change', checkbox.changeHandler);
+    
+    // 새로운 이벤트 리스너 추가
+    checkbox.changeHandler = function() {
+        if (checkbox.checked) {
+            parentNode.classList.add("ban");
+            parentNode.classList.remove('active');
+            
+            const textField = parentNode.querySelector('input[type="text"]');
+            if (textField) textField.disabled = true;
+        } else {
+            parentNode.classList.remove("ban");
+            parentNode.classList.add('active');
+            
+            const textField = parentNode.querySelector('input[type="text"]');
+            if (textField) textField.disabled = false;
+        }
+    };
+    
+    checkbox.addEventListener("change", checkbox.changeHandler);
+}
+
 // 테이블 생성 함수
 const createTd = ()=>{
 
@@ -123,32 +226,9 @@ const createTd = ()=>{
             const chk = document.createElement('input');
             chk.setAttribute('type','checkbox');
             td.appendChild(chk);
-            // 체크박스이벤트
-             const parentNode =  chk.parentNode;
-                chk.addEventListener("change",function(){
-                   
-                    if(chk.checked){
-                        
-                        parentNode.classList.add("ban");
-                        parentNode.classList.remove('active');
             
-                        const texetField = parentNode.querySelector('input[type="text"]');
-                        texetField.disabled=true;
-            
-            
-                    }else{
-                      
-                        parentNode.classList.remove("ban");
-                        parentNode.classList.add('active');
-            
-                        const texetField = parentNode.querySelector('input[type="text"]');
-                        texetField.disabled=false;
-                    }
-            
-            })
-          
-
-
+            // 체크박스 이벤트 리스너 연결
+            addCheckboxEventListener(chk);
 
             //FIXED 자리 지정
             const fixedIcon = document.createElement('span');
