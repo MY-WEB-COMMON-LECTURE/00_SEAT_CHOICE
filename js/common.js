@@ -39,6 +39,7 @@ async function loadDataFromJSON() {
 document.addEventListener('DOMContentLoaded', function() {
     loadDataFromJSON();
     initTeacherMove();
+    initTdMove();
 });
 
 // 드래그 앤 드롭 관련 함수들
@@ -234,7 +235,7 @@ const createTd = ()=>{
             //FIXED 자리 지정
             const fixedIcon = document.createElement('span');
             fixedIcon.innerHTML = "push_pin";
-            fixedIcon.setAttribute('class','material-symbols-outlined');
+            fixedIcon.setAttribute('class','material-symbols-outlined pin-icon');
             fixedIcon.setAttribute('style','position:absolute;left:80%;top:5px;font-size.0.5rem;z-index:5;cursor:pointer;font-size:1.25rem;color:green');
 
             fixedIcon.addEventListener('click',function(){
@@ -274,8 +275,15 @@ const createTd = ()=>{
                 }
             })
 
-
             td.appendChild(fixedIcon);
+
+            // 이동 아이콘 추가
+            const moveIcon = document.createElement('span');
+            moveIcon.innerHTML = "arrows_output";
+            moveIcon.setAttribute('class','material-symbols-outlined td-move-icon');
+            moveIcon.setAttribute('style','position:absolute;right:2px;top:2px;font-size:14px;z-index:5;cursor:pointer;color:#666;transition:color 0.2s ease;');
+
+            td.appendChild(moveIcon);
 
             const input = document.createElement('input');
             input.setAttribute('type','text');
@@ -450,7 +458,7 @@ function initTeacherMove() {
             document.body.style.cursor = 'crosshair';
         } else {
             teacherLabel.style.cursor = 'move';
-            moveIcon.textContent = 'open_in_full';
+            moveIcon.textContent = 'arrows_output';
             moveIcon.style.color = '#666';
             document.body.style.cursor = 'default';
             isDragging = false;
@@ -515,9 +523,115 @@ function initTeacherMove() {
             isMoving = false;
             isDragging = false;
             teacherLabel.style.cursor = 'move';
-            moveIcon.textContent = 'open_in_full';
+            moveIcon.textContent = 'arrows_output';
             moveIcon.style.color = '#666';
             document.body.style.cursor = 'default';
+        }
+    });
+}
+
+// TD 요소 이동 기능
+function initTdMove() {
+    let isTdMoving = false;
+    let isTdDragging = false;
+    let currentTd = null;
+    let startX, startY, initialLeft, initialTop;
+    
+    // TD 이동 아이콘 클릭 이벤트 위임
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('td-move-icon')) {
+            e.stopPropagation();
+            isTdMoving = !isTdMoving;
+            currentTd = e.target.parentNode;
+            
+            if (isTdMoving) {
+                e.target.textContent = 'close';
+                e.target.style.color = '#ff4444';
+                currentTd.style.cursor = 'grabbing';
+                document.body.style.cursor = 'crosshair';
+            } else {
+                e.target.textContent = 'arrows_output';
+                e.target.style.color = '#666';
+                currentTd.style.cursor = 'grab';
+                document.body.style.cursor = 'default';
+                isTdDragging = false;
+                currentTd = null;
+            }
+        }
+    });
+    
+    // TD 마우스 다운 이벤트
+    document.addEventListener('mousedown', function(e) {
+        if (!isTdMoving || !currentTd) return;
+        if (e.target.classList.contains('td-move-icon')) return;
+        
+        e.preventDefault();
+        isTdDragging = true;
+        
+        const tdRect = currentTd.getBoundingClientRect();
+        const tableRect = currentTd.closest('table').getBoundingClientRect();
+        
+        // 현재 위치 저장 (테이블 내에서의 상대 위치)
+        const currentLeft = tdRect.left - tableRect.left;
+        const currentTop = tdRect.top - tableRect.top;
+        
+        // 마우스 시작 위치와 td 시작 위치의 차이
+        startX = e.clientX - currentLeft;
+        startY = e.clientY - currentTop;
+        
+        currentTd.style.cursor = 'grabbing';
+    });
+    
+    // TD 마우스 무브 이벤트
+    document.addEventListener('mousemove', function(e) {
+        if (!isTdMoving || !isTdDragging || !currentTd) return;
+        
+        const sectionRect = currentTd.closest('section').getBoundingClientRect();
+        const tdRect = currentTd.getBoundingClientRect();
+        
+        // 새로운 위치 계산
+        const newLeft = e.clientX - startX;
+        const newTop = e.clientY - startY;
+        
+        // 섹션 전체 영역에서 이동 가능하도록 경계 확장 (테이블 영역을 벗어날 수 있음)
+        const maxLeft = sectionRect.width - tdRect.width;
+        const maxTop = sectionRect.height - tdRect.height;
+        
+        // 음수 값도 허용하여 테이블 영역을 벗어날 수 있도록 함
+        const finalLeft = Math.max(-100, Math.min(newLeft, maxLeft + 100));
+        const finalTop = Math.max(-100, Math.min(newTop, maxTop + 100));
+        
+        currentTd.style.position = 'absolute';
+        currentTd.style.left = finalLeft + 'px';
+        currentTd.style.top = finalTop + 'px';
+        currentTd.style.zIndex = '1000';
+    });
+    
+    // TD 마우스 업 이벤트
+    document.addEventListener('mouseup', function() {
+        if (isTdDragging && currentTd) {
+            isTdDragging = false;
+            currentTd.style.cursor = 'grab';
+            currentTd.style.zIndex = 'auto';
+        }
+    });
+    
+    // ESC 키로 TD 이동 모드 취소
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && isTdMoving) {
+            isTdMoving = false;
+            isTdDragging = false;
+            if (currentTd) {
+                currentTd.style.cursor = 'grab';
+                currentTd.style.zIndex = 'auto';
+                const moveIcon = currentTd.querySelector('.td-move-icon');
+                if (moveIcon) {
+                    moveIcon.textContent = 'arrows_output';
+                    moveIcon.style.color = '#666';
+                }
+            }
+            document.body.style.cursor = 'default';
+            currentTd = null;
         }
     });
 }
