@@ -57,7 +57,8 @@ function loadSubjectInfoFromStorage() {
 
 // 서버 설정 전역변수
 const SERVER_CONFIG = {
-    BASE_URL: 'http://localhost:8095',
+    // BASE_URL: 'http://localhost:8095',
+    BASE_URL: 'https://exam-all.duckdns.org',
     ENDPOINTS: {
         SEAT: '/seat',
         SAVE_POSITIONS: '/seat/save-positions',
@@ -1118,37 +1119,27 @@ function applyTdPositions() {
 
 // 위치 초기화 함수
 function resetPositions() {
-    if (confirm('모든 위치 정보를 초기화하시겠습니까?')) {
-        // localStorage 삭제
-        localStorage.removeItem('seatPositions');
-        localStorage.removeItem('tdNumbers');
-        localStorage.removeItem('tableConfig');
+    if (confirm('위치 정보만 초기화하시겠습니까? (조장/조원 데이터, 테이블 설정 등은 유지됩니다)')) {
+        console.log('=== 위치 정보만 초기화 시작 ===');
         
-        // positions 객체 초기화
+        // 위치 정보만 localStorage에서 삭제
+        localStorage.removeItem('seatPositions');
+        
+        // positions 객체만 초기화
         positions = {
             teacher: { x: 10, y: -70 },
             tds: {}
         };
         
-        // td 숫자 배열 초기화
-        tdNumbers = [];
-        
-        // 행열 정보 초기화
-        const rowInput = document.querySelector('.table-row');
-        const colInput = document.querySelector('.table-col');
-        if (rowInput && colInput) {
-            rowInput.value = 3;
-            colInput.value = 6;
-        }
-        
-        // 강사 div 위치 초기화
+        // 강사 div 위치만 초기화
         const teacherLabel = document.querySelector('.teacher-label');
         if (teacherLabel) {
             teacherLabel.style.left = '10px';
             teacherLabel.style.top = '-70px';
+            console.log('✅ 강사 위치 초기화 완료');
         }
         
-        // 모든 TD 위치 초기화
+        // 모든 TD 위치만 초기화 (내용은 유지)
         const tds = document.querySelectorAll('.tbl td');
         tds.forEach(td => {
             td.style.position = '';
@@ -1156,9 +1147,11 @@ function resetPositions() {
             td.style.top = '';
             td.style.zIndex = '';
         });
+        console.log(`✅ TD 위치 초기화 완료: ${tds.length}개`);
         
-        console.log('위치 정보, td 숫자 배열, 행열 정보 초기화 완료');
-        alert('모든 정보가 초기화되었습니다.');
+        console.log('✅ 위치 정보만 초기화 완료');
+        console.log('=== 위치 정보만 초기화 완료 ===');
+        alert('위치 정보가 초기화되었습니다. (조장/조원 데이터, 테이블 설정 등은 유지됩니다)');
     }
 }
 
