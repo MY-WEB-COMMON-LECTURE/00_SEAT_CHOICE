@@ -59,6 +59,9 @@ function loadSubjectInfoFromStorage() {
 const SERVER_CONFIG = {
     // BASE_URL: 'http://localhost:8095',
     BASE_URL: 'https://exam-all.duckdns.org',
+    // CORS 문제 해결을 위한 프록시 옵션들:
+    // BASE_URL: 'https://cors-anywhere.herokuapp.com/https://exam-all.duckdns.org',
+    // BASE_URL: 'https://api.allorigins.win/raw?url=https://exam-all.duckdns.org',
     ENDPOINTS: {
         SEAT: '/seat',
         SAVE_POSITIONS: '/seat/save-positions',
@@ -141,10 +144,37 @@ async function serverRequest(endpoint, method = 'GET', data = null) {
         
     } catch (error) {
         console.error('서버 요청 실패:', error);
+        console.error('서버 URL:', SERVER_CONFIG.BASE_URL);
+        console.error('요청 URL:', url);
+        console.error('요청 메서드:', method);
+        console.error('요청 데이터:', data);
         
         // 네트워크 에러인지 확인
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
+            const errorMessage = `서버에 연결할 수 없습니다. 
+            
+서버 URL: ${SERVER_CONFIG.BASE_URL}
+가능한 원인:
+1. 서버가 실행되지 않음
+2. CORS 정책 위반 (원격 서버 접근 시)
+3. 네트워크 연결 문제
+4. 방화벽 차단
+
+해결 방법:
+1. Spring Boot 서버에서 CORS 설정 확인
+2. 프록시 서버 사용 (cors-anywhere 등)
+3. 브라우저 개발자 도구에서 네트워크 탭 확인
+4. 서버 로그 확인`;
+            
+            console.error(errorMessage);
+            
+            // CORS 오류인지 확인
+            if (SERVER_CONFIG.BASE_URL.includes('duckdns.org') || SERVER_CONFIG.BASE_URL.includes('http')) {
+                console.warn('⚠️ CORS 오류 가능성: 원격 서버에 접근할 때 CORS 정책이 차단될 수 있습니다.');
+                console.warn('💡 해결 방법: 서버에서 CORS 설정을 확인하거나 프록시 서버를 사용하세요.');
+            }
+            
+            throw new Error('서버에 연결할 수 없습니다. CORS 설정을 확인해주세요.');
         }
         
         // JSON 파싱 에러인지 확인
