@@ -9,7 +9,7 @@ main>section{
     overflow:auto;
 }
 main>section>div{
-   
+    position: relative;
 }
 main>section table{}
 
@@ -71,25 +71,36 @@ table td.drag-over {
     border: 2px dashed #2196f3;
 }
 
-table::before{
-    content:"강사";
-    display:block;
-    width : 100px;
-    border-radius: 5px;
-    height :50px;
-    /* border : 1px solid; */
-    margin-bottom:15px;
-
-    display:flex;
+.teacher-label {
+    display: flex;
     justify-content: center;
     align-items: center;
-    
-    position:absolute;
-    right:0;
-    top:-70px;
-    left : 10px;
+    width: 100px;
+    border-radius: 5px;
+    height: 50px;
+    margin-bottom: 15px;
+    position: absolute;
+    right: 0;
+    top: -70px;
+    left: 10px;
     box-shadow: 5px 5px 5px lightgray;
-    
+    cursor: move;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+.move-icon {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 16px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.move-icon:hover {
+    color: #333;
 }
 
 

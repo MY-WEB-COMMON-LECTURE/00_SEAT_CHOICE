@@ -38,6 +38,7 @@ async function loadDataFromJSON() {
 // 페이지 로드 시 데이터 로드
 document.addEventListener('DOMContentLoaded', function() {
     loadDataFromJSON();
+    initTeacherMove();
 });
 
 // 드래그 앤 드롭 관련 함수들
@@ -424,4 +425,99 @@ stop2.addEventListener("click",function(){
 function rotateTable() {
     const tableBlock = document.querySelector('.table-block');
     tableBlock.classList.toggle('rotated');
+}
+
+// 강사 div 이동 기능
+function initTeacherMove() {
+    const teacherLabel = document.querySelector('.teacher-label');
+    const moveIcon = document.querySelector('.move-icon');
+    
+    if (!teacherLabel || !moveIcon) return;
+    
+    let isMoving = false;
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+    
+    // 이동 아이콘 클릭 시 이동 모드 시작
+    moveIcon.addEventListener('click', function(e) {
+        e.stopPropagation();
+        isMoving = !isMoving;
+        
+        if (isMoving) {
+            teacherLabel.style.cursor = 'grabbing';
+            moveIcon.textContent = 'close';
+            moveIcon.style.color = '#ff4444';
+            document.body.style.cursor = 'crosshair';
+        } else {
+            teacherLabel.style.cursor = 'move';
+            moveIcon.textContent = 'open_in_full';
+            moveIcon.style.color = '#666';
+            document.body.style.cursor = 'default';
+            isDragging = false;
+        }
+    });
+    
+    // 마우스 다운 이벤트 (드래그 시작)
+    teacherLabel.addEventListener('mousedown', function(e) {
+        if (!isMoving) return;
+        e.preventDefault();
+        
+        isDragging = true;
+        const teacherSection = teacherLabel.closest('section');
+        const sectionRect = teacherSection.getBoundingClientRect();
+        
+        // 현재 위치 저장
+        const currentLeft = parseInt(teacherLabel.style.left) || 0;
+        const currentTop = parseInt(teacherLabel.style.top) || -70;
+        
+        // 마우스 시작 위치와 div 시작 위치의 차이
+        startX = e.clientX - currentLeft;
+        startY = e.clientY - currentTop;
+        
+        teacherLabel.style.cursor = 'grabbing';
+    });
+    
+    // 마우스 무브 이벤트 (드래그 중)
+    document.addEventListener('mousemove', function(e) {
+        if (!isMoving || !isDragging) return;
+        
+        const teacherSection = teacherLabel.closest('section');
+        const sectionRect = teacherSection.getBoundingClientRect();
+        const teacherRect = teacherLabel.getBoundingClientRect();
+        
+        // 새로운 위치 계산
+        const newLeft = e.clientX - startX;
+        const newTop = e.clientY - startY;
+        
+        // 화면 경계 내에서만 이동
+        const maxLeft = sectionRect.width - teacherRect.width;
+        const maxTop = sectionRect.height - teacherRect.height;
+        
+        const finalLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        const finalTop = Math.max(-70, Math.min(newTop, maxTop));
+        
+        teacherLabel.style.left = finalLeft + 'px';
+        teacherLabel.style.top = finalTop + 'px';
+        teacherLabel.style.right = 'auto';
+    });
+    
+    // 마우스 업 이벤트 (드래그 종료)
+    document.addEventListener('mouseup', function() {
+        if (isDragging) {
+            isDragging = false;
+            teacherLabel.style.cursor = 'move';
+        }
+    });
+    
+    // ESC 키로 이동 모드 취소
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && isMoving) {
+            isMoving = false;
+            isDragging = false;
+            teacherLabel.style.cursor = 'move';
+            moveIcon.textContent = 'open_in_full';
+            moveIcon.style.color = '#666';
+            document.body.style.cursor = 'default';
+        }
+    });
 }
