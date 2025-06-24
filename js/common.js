@@ -261,7 +261,7 @@ async function loadPositionsFromServer() {
         
         // subjectId로 특정 과목 데이터 조회
         const endpoint = `${SERVER_CONFIG.ENDPOINTS.SEAT}/data/${encodeURIComponent(subjectId)}`;
-        const result = await serverRequest(endpoint);
+        // const result = await serverRequest(endpoint); // 서버 요청 주석처리
         
         if (result && result.success) {
             console.log('✅ 서버에서 좌석 정보 가져오기 성공');
@@ -726,7 +726,7 @@ async function savePositionsToServer() {
         console.log('서버로 전송할 모든 데이터:', allData);
         
         // 모든 데이터를 한 번에 서버로 전송
-        const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_ALL, 'POST', allData);
+        // const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_ALL, 'POST', allData); // 서버 요청 주석처리
         
         console.log('서버 저장 완료:', result);
         alert('모든 좌석 정보가 서버에 저장되었습니다.');
@@ -882,12 +882,12 @@ async function saveManagerData() {
         // 과목 정보 가져오기
         const subjectInfo = loadSubjectInfoFromStorage() || getSubjectInfoFromUrl();
         
-        const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_MANAGER, 'POST', {
-            manager: managerData,
-            timestamp: new Date().toISOString(),
-            subjectId: subjectInfo?.subjectId || '',
-            subjectTitle: subjectInfo?.subjectTitle || ''
-        });
+        // const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_MANAGER, 'POST', {
+        //     manager: managerData,
+        //     timestamp: new Date().toISOString(),
+        //     subjectId: subjectInfo?.subjectId || '',
+        //     subjectTitle: subjectInfo?.subjectTitle || ''
+        // });
         
         console.log('조장 데이터 저장 완료:', result);
         alert('조장 데이터가 서버에 저장되었습니다.');
@@ -912,12 +912,12 @@ async function saveMemberData() {
         // 과목 정보 가져오기
         const subjectInfo = loadSubjectInfoFromStorage() || getSubjectInfoFromUrl();
         
-        const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_MEMBER, 'POST', {
-            member: memberData,
-            timestamp: new Date().toISOString(),
-            subjectId: subjectInfo?.subjectId || '',
-            subjectTitle: subjectInfo?.subjectTitle || ''
-        });
+        // const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_MEMBER, 'POST', {
+        //     member: memberData,
+        //     timestamp: new Date().toISOString(),
+        //     subjectId: subjectInfo?.subjectId || '',
+        //     subjectTitle: subjectInfo?.subjectTitle || ''
+        // });
         
         console.log('조원 데이터 저장 완료:', result);
         alert('조원 데이터가 서버에 저장되었습니다.');
@@ -941,15 +941,15 @@ async function saveTableConfig() {
         // 과목 정보 가져오기
         const subjectInfo = loadSubjectInfoFromStorage() || getSubjectInfoFromUrl();
         
-        const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_TABLE_CONFIG, 'POST', {
-            tableConfig: {
-                rows: parseInt(rowValue),
-                cols: parseInt(colValue)
-            },
-            timestamp: new Date().toISOString(),
-            subjectId: subjectInfo?.subjectId || '',
-            subjectTitle: subjectInfo?.subjectTitle || ''
-        });
+        // const result = await serverRequest(SERVER_CONFIG.ENDPOINTS.SAVE_TABLE_CONFIG, 'POST', {
+        //     tableConfig: {
+        //         rows: parseInt(rowValue),
+        //         cols: parseInt(colValue)
+        //     },
+        //     timestamp: new Date().toISOString(),
+        //     subjectId: subjectInfo?.subjectId || '',
+        //     subjectTitle: subjectInfo?.subjectTitle || ''
+        // });
         
         console.log('테이블 설정 저장 완료:', result);
         alert('테이블 설정이 서버에 저장되었습니다.');
@@ -1246,6 +1246,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // textarea 자동 저장 이벤트 리스너 추가
     addTextareaAutoSaveListeners();
     
+    // localStorage에서 테이블 행/열 정보를 input에 먼저 반영
+    loadTableConfigFromStorage();
+    
     // 서버에서 과목별 데이터 로드 (subjectId가 있는 경우에만)
     loadPositionsFromServer().then(() => {
         console.log('=== 서버 데이터 로드 완료, 위치 적용 시작 ===');
@@ -1267,7 +1270,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initTdMove();
     console.log('이동 기능 초기화 완료');
     
-    // 기본 테이블 생성 (페이지 로드 시)
+    // 기본 테이블 생성 (페이지 로드 시) - localStorage 행열 정보가 반영된 후 생성
     createTd();
 });
 
@@ -1488,10 +1491,10 @@ const createTd = ()=>{
         tbl.replaceChildren();
     }
 
-    // 행열생성 버튼 클릭 시 tdNumbers와 tableConfig만 삭제 (positions는 유지)
-    console.log('=== 행열생성 버튼 클릭 - tdNumbers, tableConfig 초기화 ===');
+    // 행열생성 버튼 클릭 시 tdNumbers만 삭제 (tableConfig는 유지)
+    console.log('=== 행열생성 버튼 클릭 - tdNumbers 초기화 (tableConfig 유지) ===');
     localStorage.removeItem('tdNumbers');
-    localStorage.removeItem('tableConfig');
+    // localStorage.removeItem('tableConfig'); // 이 줄 제거 - tableConfig 유지
     
     // positions는 유지 (기존 위치 정보 보존)
     console.log('기존 positions 정보 유지:', positions);
@@ -1502,7 +1505,7 @@ const createTd = ()=>{
     // 삭제된 td 리스트 로드 (유지)
     loadDeletedTdListFromStorage();
     
-    console.log('✅ tdNumbers, tableConfig 초기화 완료 (positions, deletedTdList 유지)');
+    console.log('✅ tdNumbers 초기화 완료 (positions, tableConfig, deletedTdList 유지)');
     
     // 새로운 td 숫자 배열 생성
     const totalCells = row * col;
@@ -1515,7 +1518,7 @@ const createTd = ()=>{
     // localStorage에 새로운 td 숫자 배열 저장
     saveTdNumbersToStorage();
     
-    // localStorage에 행열 정보 저장
+    // localStorage에 행열 정보 저장 (기존 내용 덮어쓰기)
     saveTableConfigToStorage();
 
     let cnt = 1;
@@ -2588,7 +2591,7 @@ async function createTestData() {
             subjectTitle: subjectTitle
         };
         
-        const result = await serverRequest('/seat/create-test-data', 'POST', testData);
+        // const result = await serverRequest('/seat/create-test-data', 'POST', testData); // 서버 요청 주석처리
         
         if (result && result.success) {
             console.log('✅ 테스트 데이터 생성 성공:', result);
