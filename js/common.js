@@ -57,9 +57,8 @@ function loadSubjectInfoFromStorage() {
 
 // 서버 설정 전역변수
 const SERVER_CONFIG = {
-    BASE_URL: '/bn',
     // BASE_URL: 'http://localhost:8095',
-    // BASE_URL: 'https://exam-all.duckdns.org',
+    BASE_URL: 'https://exam-all.duckdns.org',
     // CORS 문제 해결을 위한 프록시 옵션들:
     // BASE_URL: 'https://cors-anywhere.herokuapp.com/https://exam-all.duckdns.org',
     // BASE_URL: 'https://api.allorigins.win/raw?url=https://exam-all.duckdns.org',
