@@ -397,7 +397,8 @@ td span.td-move-icon{
 
 .reset-button{
    position:fixed;
-   top:20vh;
+   top:90vh;
+   max-height:50px;
    right:10px;
    z-index:1000;
    display:flex;
