@@ -62,19 +62,19 @@ const getServerConfig = () => {
     const protocol = window.location.protocol;
     
     // 로컬 개발 환경
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return {
-            BASE_URL: 'http://localhost:8095',
-            ENDPOINTS: {
-                SEAT: '/seat',
-                SAVE_POSITIONS: '/seat/save-positions',
-                SAVE_MANAGER: '/seat/save-manager',
-                SAVE_MEMBER: '/seat/save-member',
-                SAVE_TABLE_CONFIG: '/seat/save-table-config',
-                SAVE_ALL: '/seat/save-all'
-            }
-        };
-    }
+    // if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    //     return {
+    //         BASE_URL: 'http://localhost:8095',
+    //         ENDPOINTS: {
+    //             SEAT: '/seat',
+    //             SAVE_POSITIONS: '/seat/save-positions',
+    //             SAVE_MANAGER: '/seat/save-manager',
+    //             SAVE_MEMBER: '/seat/save-member',
+    //             SAVE_TABLE_CONFIG: '/seat/save-table-config',
+    //             SAVE_ALL: '/seat/save-all'
+    //         }
+    //     };
+    // }
     
     // Docker 배포 환경 (상대 경로 사용)
     return {
