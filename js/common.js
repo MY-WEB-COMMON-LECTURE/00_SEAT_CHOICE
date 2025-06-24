@@ -1,4 +1,4 @@
-console.log('common.js..');
+// console.log('common.js..'); // 주석처리
 
 // URL 파라미터 파싱 함수
 function getUrlParameter(name) {
@@ -11,7 +11,7 @@ function getSubjectInfoFromUrl() {
     const subjectId = getUrlParameter('subjectId');
     const subjectTitle = getUrlParameter('subjectTitle');
     
-    console.log('URL에서 받은 과목 정보:', { subjectId, subjectTitle });
+    // console.log('URL에서 받은 과목 정보:', { subjectId, subjectTitle }); // 주석처리
     
     return {
         subjectId: subjectId || '',
@@ -23,7 +23,7 @@ function getSubjectInfoFromUrl() {
 function updatePageTitle(subjectTitle) {
     if (subjectTitle) {
         document.title = `${subjectTitle} - 좌석 선택`;
-        console.log('페이지 제목 업데이트:', document.title);
+        // console.log('페이지 제목 업데이트:', document.title); // 주석처리
     }
 }
 
@@ -31,7 +31,7 @@ function updatePageTitle(subjectTitle) {
 function saveSubjectInfoToStorage(subjectInfo) {
     try {
         localStorage.setItem('currentSubjectInfo', JSON.stringify(subjectInfo));
-        console.log('✅ 과목 정보 localStorage 저장 완료:', subjectInfo);
+        // console.log('✅ 과목 정보 localStorage 저장 완료:', subjectInfo); // 주석처리
     } catch (error) {
         console.error('❌ 과목 정보 localStorage 저장 실패:', error);
     }
@@ -43,10 +43,10 @@ function loadSubjectInfoFromStorage() {
         const savedSubjectInfo = localStorage.getItem('currentSubjectInfo');
         if (savedSubjectInfo) {
             const subjectInfo = JSON.parse(savedSubjectInfo);
-            console.log('✅ localStorage에서 과목 정보 로드 완료:', subjectInfo);
+            // console.log('✅ localStorage에서 과목 정보 로드 완료:', subjectInfo); // 주석처리
             return subjectInfo;
         } else {
-            console.log('⚠️ localStorage에 저장된 과목 정보 없음');
+            // console.log('⚠️ localStorage에 저장된 과목 정보 없음'); // 주석처리
             return null;
         }
     } catch (error) {
@@ -103,7 +103,7 @@ async function serverRequest(endpoint, method = 'GET', data = null) {
             config.body = JSON.stringify(data);
         }
         
-        console.log(`서버 요청: ${method} ${url}`, data);
+        // console.log(`서버 요청: ${method} ${url}`, data); // 주석처리
         
         const response = await fetch(url, config);
         
@@ -114,12 +114,12 @@ async function serverRequest(endpoint, method = 'GET', data = null) {
         
         // 응답 타입 확인
         const contentType = response.headers.get('content-type');
-        console.log('응답 Content-Type:', contentType);
+        // console.log('응답 Content-Type:', contentType); // 주석처리
         
         if (contentType && contentType.includes('application/json')) {
             // JSON 응답 처리
             const result = await response.json();
-            console.log('서버 응답 (JSON):', result);
+            // console.log('서버 응답 (JSON):', result); // 주석처리
             return result;
         } else if (contentType && contentType.includes('application/xml')) {
             // XML 응답 처리 (XML을 JSON으로 변환 시도)
@@ -129,7 +129,7 @@ async function serverRequest(endpoint, method = 'GET', data = null) {
             try {
                 // 간단한 XML to JSON 변환 (Map 형태의 XML)
                 const jsonResult = parseXmlToJson(xmlText);
-                console.log('XML을 JSON으로 변환한 결과:', jsonResult);
+                // console.log('XML을 JSON으로 변환한 결과:', jsonResult); // 주석처리
                 return jsonResult;
             } catch (parseError) {
                 console.error('XML 파싱 실패:', parseError);
@@ -189,7 +189,7 @@ async function serverRequest(endpoint, method = 'GET', data = null) {
 // XML을 JSON으로 변환하는 함수 (간단한 Map 형태 XML 처리)
 function parseXmlToJson(xmlText) {
     try {
-        console.log('XML 파싱 시작:', xmlText.substring(0, 200) + '...');
+        // console.log('XML 파싱 시작:', xmlText.substring(0, 200) + '...'); // 주석처리
         
         // Map 형태의 XML을 간단히 파싱
         const result = {};
@@ -248,7 +248,7 @@ function parseXmlToJson(xmlText) {
 // 서버에서 위치 정보 가져오기
 async function loadPositionsFromServer() {
     try {
-        console.log('=== 서버에서 좌석 정보 가져오기 시작 ===');
+        // console.log('=== 서버에서 좌석 정보 가져오기 시작 ==='); // 주석처리
         
         // 과목 정보 가져오기
         const subjectInfo = loadSubjectInfoFromStorage() || getSubjectInfoFromUrl();
@@ -264,7 +264,7 @@ async function loadPositionsFromServer() {
         // const result = await serverRequest(endpoint); // 서버 요청 주석처리
         
         if (result && result.success) {
-            console.log('✅ 서버에서 좌석 정보 가져오기 성공');
+            // console.log('✅ 서버에서 좌석 정보 가져오기 성공'); // 주석처리
             
             // 서버 데이터로 localStorage 덮어쓰기
             await overwriteLocalStorageWithServerData(result);
@@ -324,14 +324,14 @@ function checkExistingLocalStorageData() {
 // 기존 localStorage 데이터 로드
 function loadExistingLocalStorageData() {
     try {
-        console.log('=== 기존 localStorage 데이터 로드 시작 ===');
+        // console.log('=== 기존 localStorage 데이터 로드 시작 ==='); // 주석처리
         
         // 위치 정보 로드
         const savedPositions = localStorage.getItem('seatPositions');
         if (savedPositions) {
             try {
                 positions = JSON.parse(savedPositions);
-                console.log('✅ 기존 위치 정보 로드 완료');
+                // console.log('✅ 기존 위치 정보 로드 완료'); // 주석처리
             } catch (error) {
                 console.error('❌ 기존 위치 정보 파싱 실패:', error);
                 setDefaultPositions();
@@ -347,7 +347,7 @@ function loadExistingLocalStorageData() {
             if (managerTextarea) {
                 managerTextarea.value = savedManagerData;
             }
-            console.log('✅ 기존 조장 데이터 로드 완료');
+            // console.log('✅ 기존 조장 데이터 로드 완료'); // 주석처리
         }
         
         // 조원 데이터 로드
@@ -357,7 +357,7 @@ function loadExistingLocalStorageData() {
             if (memberTextarea) {
                 memberTextarea.value = savedMemberData;
             }
-            console.log('✅ 기존 조원 데이터 로드 완료');
+            // console.log('✅ 기존 조원 데이터 로드 완료'); // 주석처리
         }
         
         // 테이블 설정 로드
@@ -372,13 +372,13 @@ function loadExistingLocalStorageData() {
                     rowInput.value = tableConfig.rows || 3;
                     colInput.value = tableConfig.cols || 6;
                 }
-                console.log('✅ 기존 테이블 설정 로드 완료');
+                // console.log('✅ 기존 테이블 설정 로드 완료'); // 주석처리
             } catch (error) {
                 console.error('❌ 기존 테이블 설정 파싱 실패:', error);
             }
         }
         
-        console.log('✅ 기존 localStorage 데이터 로드 완료');
+        // console.log('✅ 기존 localStorage 데이터 로드 완료'); // 주석처리
         
     } catch (error) {
         console.error('❌ 기존 localStorage 데이터 로드 실패:', error);
@@ -1248,6 +1248,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // localStorage에서 테이블 행/열 정보를 input에 먼저 반영
     loadTableConfigFromStorage();
+    
+    // localStorage에서 조장, 조원 데이터를 textarea에 표시
+    loadManagerDataFromStorage();
+    loadMemberDataFromStorage();
+    
+    // localStorage에서 위치 정보 로드
+    const savedPositions = localStorage.getItem('seatPositions');
+    if (savedPositions) {
+        try {
+            positions = JSON.parse(savedPositions);
+            console.log('✅ localStorage에서 위치 정보 로드 완료');
+        } catch (error) {
+            console.error('❌ localStorage에서 위치 정보 파싱 실패:', error);
+            setDefaultPositions();
+        }
+    } else {
+        setDefaultPositions();
+    }
     
     // 서버에서 과목별 데이터 로드 (subjectId가 있는 경우에만)
     loadPositionsFromServer().then(() => {
@@ -2469,142 +2487,3 @@ function showAllLocalStorageData() {
     console.log('=== localStorage 데이터 확인 완료 ===');
 }
 
-// 서버 데이터 로드 상태 확인 함수 (디버깅용)
-function checkServerDataLoadStatus() {
-    console.log('=== 서버 데이터 로드 상태 확인 ===');
-    
-    // 과목 정보 확인
-    const subjectInfo = loadSubjectInfoFromStorage() || getSubjectInfoFromUrl();
-    console.log('현재 과목 정보:', subjectInfo);
-    
-    if (!subjectInfo?.subjectId) {
-        console.warn('⚠️ subjectId가 없어서 서버 데이터를 로드할 수 없습니다.');
-        return;
-    }
-    
-    // 서버 요청 URL 확인
-    const endpoint = `${SERVER_CONFIG.BASE_URL}${SERVER_CONFIG.ENDPOINTS.SEAT}/data/${encodeURIComponent(subjectInfo.subjectId)}`;
-    console.log('서버 요청 URL:', endpoint);
-    
-    // localStorage 데이터 상태 확인
-    const hasPositions = localStorage.getItem('seatPositions') !== null;
-    const hasManagerData = localStorage.getItem('managerData') !== null;
-    const hasMemberData = localStorage.getItem('memberData') !== null;
-    const hasTableConfig = localStorage.getItem('tableConfig') !== null;
-    const hasManagerHistory = localStorage.getItem('managerTdNamesHistory') !== null;
-    const hasMemberHistory = localStorage.getItem('memberTdNamesHistory') !== null;
-    
-    console.log('localStorage 데이터 상태:');
-    console.log('  - 위치 정보:', hasPositions ? '있음' : '없음');
-    console.log('  - 조장 데이터:', hasManagerData ? '있음' : '없음');
-    console.log('  - 조원 데이터:', hasMemberData ? '있음' : '없음');
-    console.log('  - 테이블 설정:', hasTableConfig ? '있음' : '없음');
-    console.log('  - 조장 히스토리:', hasManagerHistory ? '있음' : '없음');
-    console.log('  - 조원 히스토리:', hasMemberHistory ? '있음' : '없음');
-    
-    // 화면 데이터 상태 확인
-    const managerTextarea = document.querySelector('.manager');
-    const memberTextarea = document.querySelector('.member');
-    const rowInput = document.querySelector('.table-row');
-    const colInput = document.querySelector('.table-col');
-    
-    console.log('화면 데이터 상태:');
-    console.log('  - 조장 textarea:', managerTextarea?.value || '빈 값');
-    console.log('  - 조원 textarea:', memberTextarea?.value || '빈 값');
-    console.log('  - 행 입력:', rowInput?.value || '빈 값');
-    console.log('  - 열 입력:', colInput?.value || '빈 값');
-    
-    console.log('=== 서버 데이터 로드 상태 확인 완료 ===');
-}
-
-// 서버 연결 테스트 함수 (디버깅용)
-async function testServerConnection() {
-    console.log('=== 서버 연결 테스트 시작 ===');
-    
-    try {
-        // 기본 서버 상태 확인
-        const testUrl = SERVER_CONFIG.BASE_URL + '/seat/list';
-        console.log('테스트 URL:', testUrl);
-        
-        const response = await fetch(testUrl, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'  // JSON 응답 요청
-            }
-        });
-        
-        console.log('응답 상태:', response.status, response.statusText);
-        console.log('응답 헤더:', response.headers.get('content-type'));
-        
-        if (response.ok) {
-            const contentType = response.headers.get('content-type');
-            
-            if (contentType && contentType.includes('application/json')) {
-                const result = await response.json();
-                console.log('✅ 서버 연결 성공 (JSON):', result);
-            } else if (contentType && contentType.includes('application/xml')) {
-                const xmlText = await response.text();
-                console.warn('⚠️ 서버에서 XML 응답을 받았습니다.');
-                console.log('XML 응답 (처음 200자):', xmlText.substring(0, 200) + '...');
-                
-                try {
-                    const jsonResult = parseXmlToJson(xmlText);
-                    console.log('✅ XML을 JSON으로 변환 성공:', jsonResult);
-                } catch (parseError) {
-                    console.error('❌ XML 파싱 실패:', parseError);
-                }
-            } else {
-                const text = await response.text();
-                console.warn('⚠️ 서버에서 예상치 못한 응답 타입:', text.substring(0, 200) + '...');
-            }
-        } else {
-            console.error('❌ 서버 응답 오류:', response.status, response.statusText);
-        }
-        
-    } catch (error) {
-        console.error('❌ 서버 연결 테스트 실패:', error);
-        
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            console.error('네트워크 에러: 서버가 실행되지 않았거나 URL이 잘못되었습니다.');
-            console.log('현재 서버 URL:', SERVER_CONFIG.BASE_URL);
-        }
-    }
-    
-    console.log('=== 서버 연결 테스트 완료 ===');
-}
-
-// 테스트 데이터 생성 함수 (디버깅용)
-async function createTestData() {
-    try {
-        console.log('=== 테스트 데이터 생성 시작 ===');
-        
-        // 과목 정보 가져오기
-        const subjectInfo = loadSubjectInfoFromStorage() || getSubjectInfoFromUrl();
-        const subjectId = subjectInfo?.subjectId || 'test123';
-        const subjectTitle = subjectInfo?.subjectTitle || '테스트 과목';
-        
-        console.log('테스트 데이터 생성 정보:', { subjectId, subjectTitle });
-        
-        const testData = {
-            subjectId: subjectId,
-            subjectTitle: subjectTitle
-        };
-        
-        // const result = await serverRequest('/seat/create-test-data', 'POST', testData); // 서버 요청 주석처리
-        
-        if (result && result.success) {
-            console.log('✅ 테스트 데이터 생성 성공:', result);
-            alert('테스트 데이터가 생성되었습니다. 페이지를 새로고침하여 데이터를 확인하세요.');
-        } else {
-            console.error('❌ 테스트 데이터 생성 실패:', result);
-            alert('테스트 데이터 생성에 실패했습니다: ' + (result?.message || '알 수 없는 오류'));
-        }
-        
-    } catch (error) {
-        console.error('❌ 테스트 데이터 생성 중 오류:', error);
-        alert('테스트 데이터 생성 중 오류가 발생했습니다: ' + error.message);
-    }
-    
-    console.log('=== 테스트 데이터 생성 완료 ===');
-}
