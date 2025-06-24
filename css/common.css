@@ -3,7 +3,7 @@
 }
 main>section{
 
-    border-top : 1px solid;
+    border-top : 4px solid darkcyan;
 
     margin :0 auto;
     overflow:auto;
@@ -77,7 +77,7 @@ table td.drag-over {
     align-items: center;
     width: 100px;
     border-radius: 5px;
-    height: 50px;
+    height: 55px;
     margin-bottom: 15px;
     position: absolute;
     left: 10px;
@@ -135,7 +135,7 @@ input[type='checkbox']{
     margin : 20px auto;
     margin-top:10px;
     
-    border : 1px solid;
+    /* border : 1px solid; */
     width : 100%;
     padding : 20px;
     
@@ -151,6 +151,7 @@ input[type='checkbox']{
 .inputBlock textarea
 {
     font-size:.9rem;
+    
 }
 .inputBlock::before{
     content : "HEADER";
@@ -161,7 +162,7 @@ input[type='checkbox']{
     width:80px;
     height:30px;
     /* border : 1px solid; */
-    border-right:1px solid black;
+    /* border-right:1px solid black; */
     display:flex;
     justify-content: center;
     align-items: center;
@@ -179,25 +180,25 @@ input[type='checkbox']{
     justify-content: space-between;
     align-items:end;
     /* height : 220px; */
-
+    
     position:relative;
     min-width:350px;
 }
 .inputBlock .left .title-01{
-    border : 1px solid;
+    /* border : 1px solid; */
     margin-bottom:5px;
     position:absolute;
     left:0px;
-    top:0px;
+    top:-10px;
 }
 .inputBlock .left>.btn-block{
     width : 100%;
-    border : 1px solid;
+    /* border : 1px solid; */
     text-align: left;
     display:flex;
     gap:0;
     position:relative;
-    top:40px;
+    top:35px;
     left:-10px;
 }
 .inputBlock .left>.btn-block>div{
@@ -205,7 +206,11 @@ input[type='checkbox']{
     gap:0;
 }
 
-
+.inputBlock .right{
+    
+    border-left:4px solid darkcyan;
+    padding-left:20px !important;
+}
 .inputBlock .right label{
     font-size:1.1rem;
     font-weight:800;
@@ -237,7 +242,7 @@ input[type='checkbox']{
 }
 
 .inputBlock .right{
-    border : 1px solid;
+    /* border : 1px solid; */
     padding : 10px;
     width:550px;
     /* height : 220px; */
@@ -280,7 +285,7 @@ input[type='checkbox']{
     width : 100px;
     margin-left:15px;
     text-align:center;
-    border : 1px solid;
+    border : 1px solid lightgray;
     margin :5px;
 }
 
@@ -318,7 +323,9 @@ td span.td-move-icon{
 .tbl{
     margin:0 auto;
     width:100%;
-    border : 1px solid;
+    /* border : 1px solid; */
+    
+    
     
     text-align:center;
   
@@ -331,10 +338,11 @@ td span.td-move-icon{
     background-color: #f8f9fa;
     position: relative;
     margin-bottom:100px;
+   
 }
 
 .tbl td{
-    border : 1px solid;
+    /* border : 1px solid; */
     padding : 10px;
     text-align:center;
     margin : 15px;
@@ -389,13 +397,19 @@ td span.td-move-icon{
 
 .reset-button{
    position:fixed;
-   top:40%;
+   top:20vh;
    right:10px;
    z-index:1000;
    display:flex;
    gap:10px;
+   background-color: #f8f9fa;
+   padding : 10px;
 }
 .reset-button button{
     display:flex;
+}
+
+textarea{
+    min-height : 80px !important;
 }
 
