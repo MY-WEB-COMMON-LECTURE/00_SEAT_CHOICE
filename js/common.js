@@ -58,18 +58,18 @@ function loadSubjectInfoFromStorage() {
 // 서버 설정 전역변수
 const SERVER_CONFIG = {
     // BASE_URL: 'http://localhost:8095',
-    BASE_URL: 'https://exam-all.duckdns.org',
+    // BASE_URL: 'https://exam-all.duckdns.org',
     // CORS 문제 해결을 위한 프록시 옵션들:
     // BASE_URL: 'https://cors-anywhere.herokuapp.com/https://exam-all.duckdns.org',
     // BASE_URL: 'https://api.allorigins.win/raw?url=https://exam-all.duckdns.org',
-    ENDPOINTS: {
-        SEAT: '/seat',
-        SAVE_POSITIONS: '/seat/save-positions',
-        SAVE_MANAGER: '/seat/save-manager',
-        SAVE_MEMBER: '/seat/save-member',
-        SAVE_TABLE_CONFIG: '/seat/save-table-config',
-        SAVE_ALL: '/seat/save-all'
-    }
+    // ENDPOINTS: {
+    //     SEAT: '/seat',
+    //     SAVE_POSITIONS: '/seat/save-positions',
+    //     SAVE_MANAGER: '/seat/save-manager',
+    //     SAVE_MEMBER: '/seat/save-member',
+    //     SAVE_TABLE_CONFIG: '/seat/save-table-config',
+    //     SAVE_ALL: '/seat/save-all'
+    // }
 };
 
 // 서버 요청 공통 함수
