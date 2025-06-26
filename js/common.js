@@ -849,6 +849,9 @@ function saveManagerDataToStorage() {
         if (managerTextarea) {
             localStorage.setItem('managerData', managerTextarea.value);
             console.log('✅ 조장 데이터 localStorage 저장 완료:', managerTextarea.value);
+            
+            // 부모 컴포넌트로 데이터 전송
+            sendLocalStorageDataToParent();
         }
     } catch (error) {
         console.error('❌ 조장 데이터 localStorage 저장 실패:', error);
@@ -862,6 +865,9 @@ function saveMemberDataToStorage() {
         if (memberTextarea) {
             localStorage.setItem('memberData', memberTextarea.value);
             console.log('✅ 조원 데이터 localStorage 저장 완료:', memberTextarea.value);
+            
+            // 부모 컴포넌트로 데이터 전송
+            sendLocalStorageDataToParent();
         }
     } catch (error) {
         console.error('❌ 조원 데이터 localStorage 저장 실패:', error);
@@ -1031,6 +1037,9 @@ function saveTableConfigToStorage() {
             };
             localStorage.setItem('tableConfig', JSON.stringify(config));
             console.log('✅ 행열 정보 localStorage 저장 완료:', config);
+            
+            // 부모 컴포넌트로 데이터 전송
+            sendLocalStorageDataToParent();
         }
     } catch (error) {
         console.error('❌ 행열 정보 localStorage 저장 실패:', error);
@@ -1103,6 +1112,9 @@ function savePositions() {
     try {
         localStorage.setItem('seatPositions', JSON.stringify(positions));
         console.log('위치 정보 저장 완료');
+        
+        // 부모 컴포넌트로 데이터 전송
+        sendLocalStorageDataToParent();
     } catch (error) {
         console.error('위치 정보 저장 오류:', error);
     }
@@ -1290,7 +1302,46 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 기본 테이블 생성 (페이지 로드 시) - localStorage 행열 정보가 반영된 후 생성
     createTd();
+    
+    // localStorage 데이터를 부모 컴포넌트로 전달
+    sendLocalStorageDataToParent();
 });
+
+// localStorage 데이터를 부모 컴포넌트로 전달하는 함수
+function sendLocalStorageDataToParent() {
+    try {
+        // localStorage에서 모든 데이터 수집
+        const localStorageData = {
+            currentSubjectInfo: localStorage.getItem('currentSubjectInfo'),
+            tableConfig: localStorage.getItem('tableConfig'),
+            managerData: localStorage.getItem('managerData'),
+            memberData: localStorage.getItem('memberData'),
+            memberTdNamesHistory: localStorage.getItem('memberTdNamesHistory'),
+            managerTdNamesHistory: localStorage.getItem('managerTdNamesHistory'),
+            deletedTdList: localStorage.getItem('deletedTdList'),
+            seatPositions: localStorage.getItem('seatPositions'),
+            tdNumbers: localStorage.getItem('tdNumbers')
+        };
+        
+        // undefined 값 제거
+        Object.keys(localStorageData).forEach(key => {
+            if (localStorageData[key] === null) {
+                delete localStorageData[key];
+            }
+        });
+        
+        // 부모 창으로 데이터 전송
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+                type: 'LOCALSTORAGE_DATA_UPDATE',
+                data: localStorageData
+            }, '*');
+            console.log('✅ localStorage 데이터를 부모 컴포넌트로 전송 완료');
+        }
+    } catch (error) {
+        console.error('❌ localStorage 데이터 전송 실패:', error);
+    }
+}
 
 // 과목 정보를 화면에 표시하는 함수 (선택사항)
 function displaySubjectInfo(subjectInfo) {
