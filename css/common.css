@@ -3,7 +3,7 @@
 }
 main>section{
 
-    border-top : 4px solid darkcyan;
+    border-bottom : 4px solid darkcyan;
 
     margin :0 auto;
     overflow:auto;
@@ -23,7 +23,7 @@ table{
 
     /* border : 1px solid; */
     padding : 10px;
-    margin : 100px auto;
+    margin : 50px auto;
     
     position:relative;
     /* border : 1px solid; */
@@ -77,16 +77,17 @@ table td.drag-over {
     align-items: center;
     width: 100px;
     border-radius: 5px;
-    height: 55px;
+    height: 45px;
     margin-bottom: 15px;
     position: absolute;
-    left: 10px;
-    top: -70px;
+    
+    left: 0 ;
+    top: 0 ;
     box-shadow: 5px 5px 5px lightgray;
     cursor: move;
-    background-color: #f8f9fa;
     border: 1px solid #dee2e6;
-    z-index: 1000;
+
+    z-index: 9000 !important;
 }
 
 .move-icon {
@@ -330,14 +331,14 @@ td span.td-move-icon{
     text-align:center;
   
     position:relative;
-    margin-top:100px;    
-  
+    
 }
 .show-block{
-    min-height:50vh;
+    
     background-color: #f8f9fa;
     position: relative;
-    margin-bottom:100px;
+    margin-top: 80px;
+    margin-bottom :65px;
    
 }
 
